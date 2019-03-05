@@ -185,7 +185,13 @@ pop_alts_per_chrom %>% group_by(pop) %>% mutate(prop_alts = num_alts/sum(num_alt
   labs(x="Chromosome Number", y="Proportion of CNVs per chromosome")
 #The plot shows grouped by results but the key is still the same so hard to understand. Need to order the key as well. 
 #If want to go back to the plot without ordering remove group=
-
+#Chr5 has most cnvs and chr10 has least in all populations. To compare the totals per population for chr5 and 10. 
+pop_alts_per_chrom %>% filter(CHROM=='NC_035784.1') %>% ggplot(aes(x=pop, y=num_alts)) + 
+  geom_bar(stat = "identity", fill='dark gray')+ ggtitle("Duplication freq per population on chr5") +
+  xlab("Populations") + ylab("Duplication frequency")
+pop_alts_per_chrom %>% filter(CHROM=='NC_035789.1') %>% ggplot(aes(x=pop, y=num_alts)) + 
+  geom_bar(stat = "identity", fill='dark gray')+ ggtitle("Duplication freq per population on chr10") +
+  xlab("Populations") + ylab("Duplication frequency")
 
 # get a de-duplicated list of locus id's
 ids <- unique(pop_num_alts_present$ID)
@@ -237,13 +243,28 @@ dup_annot_chr10 <- oysterdup3 %>% select(CHROM,POS,ID) %>% left_join(dup_annot, 
   filter(!grepl("uncharacterized",annot))
 #toll-like receptors
 
-##Mapping GO_IDs, LOCs and DUPs
+##Mapping GO_IDs, EC_num, LOCs and DUPs
 #Protein_ids (XP_IDs) and LOCs were pulled out from ref gff3 file using awk (detailed in log)
-#Join this with DUP_IDs
+ref_annot_prot <- read.table("/Users/tejashree/Documents/Projects/cnv/annot/ref_annot_prot", 
+                        sep="\t" , quote="", fill=FALSE, stringsAsFactors = FALSE)
+colnames(ref_annot_prot) <- c("LOC", "Sequence_name")
+#Join this with DUP_IDs (map_dup has DUP_ID and LOC)
+dup_loc_xp <- left_join(map_dup, ref_annot_prot, by="LOC") 
 #Join that with XP_sequences_Cvirginica_GCF_002022765.2_GO.tab by XP 
-#Extract DUP_IDs, GO_IDs : revigo? no prob
+ref_annot_go_kegg <- read.table("/Users/tejashree/Documents/Projects/oyster/exp_data/Spring2016/genome/XP_sequences_Cvirginica_GCF_002022765.2_GO.tab", 
+                             sep="\t" , quote="", fill=FALSE, stringsAsFactors = FALSE, header = TRUE)
+colnames(ref_annot_go_kegg) <- c("Sequence_name","Sequence_length","Sequence_description","GO_ID","Enzyme_code","Enzyme_name")
+left_join(dup_loc_xp, ref_annot_go_kegg, by="Sequence_name") %>% head()
+#Extract DUP_IDs, GO_IDs
+dup_go <- left_join(dup_loc_xp, ref_annot_go_kegg, by="Sequence_name") %>% select(ID, GO_ID) %>% unique() 
+#  separate(GO_ID, sep = ";", into = paste("V", 1:13, sep = "_")) 
+#separate the GO_IDs and get count for each
+go_vector <- as.data.frame(table(unlist(strsplit(as.character(dup_go$GO_ID), ";"))))
+#Highest freq: molecular funtion, ion binding, cellular component, signal transduction, cellular protein modification process
 #Extract DUP_IDs, EC#s :pathway mapping 
-#Look at chr5 and 10 separately
-
-
+dup_kegg <- left_join(dup_loc_xp, ref_annot_go_kegg, by="Sequence_name") %>% select(ID, Enzyme_name) %>% unique() 
+#separate the enzyme names and get count for each
+kegg_vector <- as.data.frame(table(unlist(strsplit(as.character(dup_kegg$Enzyme_name), ";"))))
+#Highest:Nucleoside-triphosphate phosphatase,Acting on peptide bonds (peptidases),Protein-serine/threonine phosphatase,
+#Protein-tyrosine-phosphatase,Adenosinetriphosphatase
 

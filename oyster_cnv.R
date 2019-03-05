@@ -157,14 +157,34 @@ ggplot(pos_chr1,aes(POS,num_alts,color=pop))+geom_point()+labs(title = "Chr10",
                                                                x = "Position", y = "Number")
 
 #plot them all together subsetting 4 at a time
-chr <- unique(pop_num_pos_alts_present_chrom$CHROM) %>% sort()
-chr_subset <- chr[1:4]
-pos_chr_plots <- vector("list",length(chr_subset))
-for (i in chr_subset){
-  pos_chr_plots[[i]] <- pop_num_pos_alts_present_chrom %>% filter(CHROM == i) %>% ggplot(aes(POS,num_alts,color=pop)) +
-    geom_point()+labs( x = "Position", y = "Number")+ theme(legend.position = "none")
-}
-cowplot::plot_grid(plotlist=pos_chr_plots,ncol=2,nrow=2, labels = chr_subset)
+#Need to work on how to plot them two at a time in a grid.
+# chr <- unique(pop_num_pos_alts_present_chrom$CHROM) %>% sort()
+# chr_subset <- chr[1:4]
+# pos_chr_plots <- vector("list",length(chr_subset))
+# for (i in chr_subset){
+#   pos_chr_plots[[i]] <- pop_num_pos_alts_present_chrom %>% filter(CHROM == i) %>% ggplot(aes(POS,num_alts,color=pop)) +
+#     geom_point()+labs( x = "Position", y = "Number")+ theme(legend.position = "none")
+# }
+# cowplot::plot_grid(plotlist=pos_chr_plots,ncol=2,nrow=2, labels = chr_subset)
+
+#try adding a new column called type with inbred,wild and selected values for each population and while plotting use group=type
+pop <- c("CL","CLP","CS","DEBY","HC","HCVA","HG","HI","LM","LOLA","NEH","NG","OBOYS2","SL","SM","UMFS")
+type <- c("W","W","W","S","W","W","I","W","W","S","S","I","S","W","W","S")
+pop_type <- data.frame(pop,type)
+colnames(pop_type) <- c("pop","type")
+pop_type[] <- lapply(pop_type, as.character)
+pop_alts_per_chrom <- left_join(pop_alts_per_chrom,pop_type,by='pop')
+#Frequency of dups per chromosome for all populations
+pop_alts_per_chrom <- pop_num_pos_alts_present_chrom %>% group_by(pop,CHROM) %>% 
+  summarize(num_alts = sum(num_alts))
+ggplot(pop_alts_per_chrom, aes(x=CHROM,y=num_alts, color=pop)) + geom_bar(stat = "identity", fill="white") + 
+  labs(x="Chromosome Number", y="Frequency of CNVs")
+# Proportion of dups per chromosome for all populations 
+pop_alts_per_chrom %>% group_by(pop) %>% mutate(prop_alts = num_alts/sum(num_alts)) %>% 
+  ggplot(aes(x=CHROM,y=prop_alts, color=pop, group=type)) + geom_bar(stat = "identity", fill="white") + 
+  labs(x="Chromosome Number", y="Proportion of CNVs per chromosome")
+#The plot shows grouped by results but the key is still the same so hard to understand. Need to order the key as well. 
+#If want to go back to the plot without ordering remove group=
 
 
 # get a de-duplicated list of locus id's
@@ -206,4 +226,24 @@ map_dup <- read.table("/Users/tejashree/Documents/Projects/cnv/annot/Oyster_Dup_
 colnames(map_dup) <- c("ID", "LOC")
 dup_annot <- left_join(map_dup, ref_annot, by = "LOC") 
 dup_annot %>% group_by(annot) %>% summarize(count=n()) # There are 593 with no annotation
+#The proportion shows that highest dups mapped on chr5 and lowest on chr10. Need to see what are the annot for those dups.
+#chrom_pos_id <- 
+dup_annot_chr5 <- oysterdup3 %>% select(CHROM,POS,ID) %>% left_join(dup_annot, by='ID') %>% 
+  filter(CHROM=="NC_035784.1") %>% filter(!is.na(LOC)) %>% filter(!is.na(annot)) %>% 
+  filter(!grepl("uncharacterized",annot))
+#lectins
+dup_annot_chr10 <- oysterdup3 %>% select(CHROM,POS,ID) %>% left_join(dup_annot, by='ID') %>% 
+  filter(CHROM=="NC_035789.1") %>% filter(!is.na(LOC)) %>% filter(!is.na(annot)) %>% 
+  filter(!grepl("uncharacterized",annot))
+#toll-like receptors
+
+##Mapping GO_IDs, LOCs and DUPs
+#Protein_ids (XP_IDs) and LOCs were pulled out from ref gff3 file using awk (detailed in log)
+#Join this with DUP_IDs
+#Join that with XP_sequences_Cvirginica_GCF_002022765.2_GO.tab by XP 
+#Extract DUP_IDs, GO_IDs : revigo? no prob
+#Extract DUP_IDs, EC#s :pathway mapping 
+#Look at chr5 and 10 separately
+
+
 

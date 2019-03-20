@@ -8,7 +8,9 @@ library(tidyverse)
 library(RColorBrewer)
 library(stringr)
 library(ggplot2)
-library(dplyr)
+#library(plyr)
+#library(dplyr)
+library(scales)
 
 #gene data - sizes but not more info
 oysterdup <- read.table("/Users/tejashree/Documents/Projects/cnv/delly/oysterduplicate_sort.bed",stringsAsFactors = FALSE)
@@ -55,6 +57,7 @@ gtypes3 <- gather(gtypes2,genotype,number,-pop) #make long
 
 ggplot(gtypes3,aes(genotype,number,color=pop))+geom_boxplot()+
   ylim(c(0,3000)) #plot numbers but this doesn't account for variable quality - use proportions below
+ggplot(gtypes3,aes(genotype,number,color=pop))+geom_boxplot()
 
 #proportions
 gtypes_p <- gtypes2 %>% mutate(sum=rowSums(select(gtypes2,("0/0":"1/1")))) %>%
@@ -91,16 +94,13 @@ gtypes_long$num_alts <- str_split(gtypes_long$gtype,'/') %>%
   map_int(sum)
 #adding dups in all individuals of same pop to give pop count
 pop_num_alts <- gtypes_long %>% filter(!is.na(num_alts)) %>%
-  group_by(pop,ID) %>% 
-  summarize(num_alts = sum(num_alts))
+  group_by(pop,ID) %>% summarize(num_alts = sum(num_alts)) #try creating a new variable
 
 pop_num_alts <- left_join(pop_num_alts,select(oysterdup3,ID,length) )
 pop_num_alts_present <- filter(pop_num_alts,num_alts >0)
 ggplot(pop_num_alts_present, aes(pop,length)) +geom_violin() + ylim(c(0,2500))
 
-meanl <- group_by(pop_num_alts_present,pop) %>% 
-  summarize(mean_len = mean(length),
-            sd = sd(length))
+meanl <- group_by(pop_num_alts_present,pop) %>% summarize(mean_len = mean(length),sd = sd(length))
 ggplot(meanl,aes(pop,mean_len))+geom_point()+
   geom_errorbar(aes(ymin=mean_len+sd,ymax=mean_len-sd))
 #populations all have the same length / distribution of duplications
@@ -123,38 +123,39 @@ ggplot(pop_num_pos_alts_present,aes(POS,num_alts,color=pop))+geom_point()
 #pulling out only CHROM & POS
 chrom_pos <- oysterdup3 %>% select(CHROM, POS)
 #adding CHROM column to above frame 
-pop_num_pos_alts_present_chrom <- left_join(pop_num__pos_alts_present, chrom_pos, by = "POS") 
+pop_num_pos_alts_present_chrom <- left_join(pop_num_pos_alts_present, chrom_pos, by = "POS") 
 #duplications by positions per chromosome
 pos_chr1 <- filter(pop_num_pos_alts_present_chrom, CHROM == "NC_035780.1")
+#xlims were obtained from the scaffold sizes for each chromosome. info present in the shared genome folder or NCBI. 
 ggplot(pos_chr1,aes(POS,num_alts,color=pop))+geom_point()+labs(title = "Chr1", 
-                                                               x = "Position", y = "Number")
-pos_chr1 <- filter(pop_num_pos_alts_present_chrom, CHROM == "NC_035781.1")
-ggplot(pos_chr1,aes(POS,num_alts,color=pop))+geom_point()+labs(title = "Chr2", 
-                                                               x = "Position", y = "Number")
-pos_chr1 <- filter(pop_num_pos_alts_present_chrom, CHROM == "NC_035782.1")
-ggplot(pos_chr1,aes(POS,num_alts,color=pop))+geom_point()+labs(title = "Chr3", 
-                                                               x = "Position", y = "Number")
-pos_chr1 <- filter(pop_num_pos_alts_present_chrom, CHROM == "NC_035783.1")
-ggplot(pos_chr1,aes(POS,num_alts,color=pop))+geom_point()+labs(title = "Chr4", 
-                                                               x = "Position", y = "Number")
-pos_chr1 <- filter(pop_num_pos_alts_present_chrom, CHROM == "NC_035784.1")
-ggplot(pos_chr1,aes(POS,num_alts,color=pop))+geom_point()+labs(title = "Chr5", 
-                                                               x = "Position", y = "Number")
-pos_chr1 <- filter(pop_num_pos_alts_present_chrom, CHROM == "NC_035785.1")
-ggplot(pos_chr1,aes(POS,num_alts,color=pop))+geom_point()+labs(title = "Chr6", 
-                                                               x = "Position", y = "Number")
-pos_chr1 <- filter(pop_num_pos_alts_present_chrom, CHROM == "NC_035786.1")
-ggplot(pos_chr1,aes(POS,num_alts,color=pop))+geom_point()+labs(title = "Chr7", 
-                                                               x = "Position", y = "Number")
-pos_chr1 <- filter(pop_num_pos_alts_present_chrom, CHROM == "NC_035787.1")
-ggplot(pos_chr1,aes(POS,num_alts,color=pop))+geom_point()+labs(title = "Chr8", 
-                                                               x = "Position", y = "Number")
-pos_chr1 <- filter(pop_num_pos_alts_present_chrom, CHROM == "NC_035788.1")
-ggplot(pos_chr1,aes(POS,num_alts,color=pop))+geom_point()+labs(title = "Chr9", 
-                                                               x = "Position", y = "Number")
-pos_chr1 <- filter(pop_num_pos_alts_present_chrom, CHROM == "NC_035789.1")
-ggplot(pos_chr1,aes(POS,num_alts,color=pop))+geom_point()+labs(title = "Chr10", 
-                                                               x = "Position", y = "Number")
+                                                               x = "Position", y = "Number") + xlim(1,65668440)+ scale_x_continuous(labels = comma)
+pos_chr2 <- filter(pop_num_pos_alts_present_chrom, CHROM == "NC_035781.1")
+ggplot(pos_chr2,aes(POS,num_alts,color=pop))+geom_point()+labs(title = "Chr2", 
+                                                               x = "Position", y = "Number") + xlim(1,61752955)
+pos_chr3 <- filter(pop_num_pos_alts_present_chrom, CHROM == "NC_035782.1")
+ggplot(pos_chr3,aes(POS,num_alts,color=pop))+geom_point()+labs(title = "Chr3", 
+                                                               x = "Position", y = "Number") + xlim(1,77061148)
+pos_chr4 <- filter(pop_num_pos_alts_present_chrom, CHROM == "NC_035783.1")
+ggplot(pos_chr4,aes(POS,num_alts,color=pop))+geom_point()+labs(title = "Chr4", 
+                                                               x = "Position", y = "Number")+ xlim(1,59691872)
+pos_chr5 <- filter(pop_num_pos_alts_present_chrom, CHROM == "NC_035784.1")
+ggplot(pos_chr5,aes(POS,num_alts,color=pop))+geom_point()+labs(title = "Chr5", 
+                                                               x = "Position", y = "Number")+ xlim(1,98698416)
+pos_chr6 <- filter(pop_num_pos_alts_present_chrom, CHROM == "NC_035785.1")
+ggplot(pos_chr6,aes(POS,num_alts,color=pop))+geom_point()+labs(title = "Chr6", 
+                                                               x = "Position", y = "Number")+ xlim(1,51258098)
+pos_chr7 <- filter(pop_num_pos_alts_present_chrom, CHROM == "NC_035786.1")
+ggplot(pos_chr7,aes(POS,num_alts,color=pop))+geom_point()+labs(title = "Chr7", 
+                                                               x = "Position", y = "Number")+ xlim(1,57830854)
+pos_chr8 <- filter(pop_num_pos_alts_present_chrom, CHROM == "NC_035787.1")
+ggplot(pos_chr8,aes(POS,num_alts,color=pop))+geom_point()+labs(title = "Chr8", 
+                                                               x = "Position", y = "Number")+ xlim(1,75944018)
+pos_chr9 <- filter(pop_num_pos_alts_present_chrom, CHROM == "NC_035788.1")
+ggplot(pos_chr9,aes(POS,num_alts,color=pop))+geom_point()+labs(title = "Chr9", 
+                                                               x = "Position", y = "Number")+ xlim(1,104168038)
+pos_chr10 <- filter(pop_num_pos_alts_present_chrom, CHROM == "NC_035789.1")
+ggplot(pos_chr10,aes(POS,num_alts,color=pop))+geom_point()+labs(title = "Chr10", 
+                                                               x = "Position", y = "Number")+ xlim(1,32650045)
 
 #plot them all together subsetting 4 at a time
 #Need to work on how to plot them two at a time in a grid.
@@ -222,6 +223,48 @@ upset(binaries, nsets = length(pops), main.bar.color = "SteelBlue", sets.bar.col
 #Columns with 2 or more dots show the count of shared duplicates 
 #(intersecting sections of a Venn diagram).
 
+##Getting the genotype and copy number for all pop
+#funtion to pull out copy num from a col in the vcf for a sample
+getcn <- function(bedout_col){
+  str_split( bedout_col, ':') %>% map_chr(8)
+}
+cn_only <- map_dfr(select(oysterdup3,CL_1:UMFS_6),getcn)
+cn_only$ID <- oysterdup3$ID
+cn_only$POS <- oysterdup3$POS
+cn_only$CHROM <- oysterdup3$CHROM
+#pulling out gtype and cn for each pop side by side to visually compare
+gtypes_cn <- left_join(cn_only, gtypes_only, by = 'ID') 
+gtypes_cn <- gtypes_cn[,order(colnames(gtypes_cn))]
+#long table with both cn and gtype info
+cn_long <- gather(cn_only,key=sample,value=cn,-ID, -POS, -CHROM)
+cn_long$pop <- str_split(cn_long$sample,'_') %>% map(1) %>% as.character()
+cn_long$pop <- as.vector(cn_long$pop)
+#removing 0/0 and ./. genotypes since the cn is not real for those
+#cn_gtypes_long <- left_join(cn_long, gtypes_long) %>% filter(gtype != "0/0" & gtype != "./.") %>% select(ID, CHROM, POS, pop, sample, cn, gtype, num_alts) 
+cn_gtypes_long <- left_join(cn_long, gtypes_long)
+#Converting cn value to 0 for genotypes 0/0 and ./. because they are assumed homologous to reference. 
+cn_gtypes_long <- within(cn_gtypes_long, cn[gtype == '0/0'] <- 0)
+cn_gtypes_long <- within(cn_gtypes_long, cn[gtype == './.'] <- 0)
+cn_gtypes_long_chr1 <- filter(cn_gtypes_long, CHROM == "NC_035780.1") %>% select(POS, sample, cn) 
+cn_gtypes_long_chr1$cn <- as.numeric(as.character(cn_gtypes_long_chr1$cn))
+cn_chr1_hmap <- ggplot(data = cn_gtypes_long_chr1, mapping = aes(x = POS,y = sample,fill = cn)) + geom_tile() + xlab(label = "Position")
+cn_chr1_hmap
+tmp2 <- filter(cn_gtypes_long_chr1, sample == "CL_1") 
+tmp3 <- ggplot(data= tmp2, mapping = aes(x = POS,y = sample,fill = cn), stat = "identity") + geom_tile() + xlab(label = "Position")
+tmp3
+ggplot(tmp2, aes(POS, sample)) +
+  geom_raster(aes(fill = cn), interpolate = TRUE)
+tmp2 <- filter(tmp2, cn != 0) 
+  ggplot(tmp2, aes(POS, sample)) + geom_point(aes(fill = cn))
+
+# tmp <- data.matrix(cn_gtypes_long_chr1, rownames.force = NA)
+# heatmap(tmp)
+
+  # ggplot(cn_gtypes_long_chr1, aes(POS,cn,fill=cn))+ geom_point() +
+  # labs(title = "Chr1", x = "Position", y = "Copy Number") +
+  # xlim(1,65668440)+ scale_x_continuous(labels = comma)
+
+###### ANALYSIS POST ANNOTATION #######
 # Annotating dups 
 # Read in annotations from ref genome
 ref_annot <- read.table("/Users/tejashree/Documents/Projects/cnv/annot/ref_annot", 
@@ -242,6 +285,7 @@ dup_annot_chr10 <- oysterdup3 %>% select(CHROM,POS,ID) %>% left_join(dup_annot, 
   filter(CHROM=="NC_035789.1") %>% filter(!is.na(LOC)) %>% filter(!is.na(annot)) %>% 
   filter(!grepl("uncharacterized",annot))
 #toll-like receptors
+
 
 ##Mapping GO_IDs, EC_num, LOCs and DUPs
 #Protein_ids (XP_IDs) and LOCs were pulled out from ref gff3 file using awk (detailed in log)
@@ -267,4 +311,28 @@ dup_kegg <- left_join(dup_loc_xp, ref_annot_go_kegg, by="Sequence_name") %>% sel
 kegg_vector <- as.data.frame(table(unlist(strsplit(as.character(dup_kegg$Enzyme_name), ";"))))
 #Highest:Nucleoside-triphosphate phosphatase,Acting on peptide bonds (peptidases),Protein-serine/threonine phosphatase,
 #Protein-tyrosine-phosphatase,Adenosinetriphosphatase
+
+##DO dups exist in expanded gene families?
+##Pull out dups that are annotated as the gene members that we know belong to expanded families
+dplyr::filter(dup_annot, grepl('interferon-induced protein 44', annot)) %>% select('ID') %>% unique() %>% tally() #15
+dplyr::filter(dup_annot, grepl('interferon-induced protein 44', annot)) %>% select('LOC') %>% unique() %>% tally() #17
+ifi44_ID <- dplyr::filter(dup_annot, grepl('interferon-induced protein 44', annot)) %>% select('ID') %>% unique()
+gtypes_long_pres <- gtypes_long %>% mutate(pres = ifelse(gtypes_long$num_alts > 0, 'yes', 'no'))
+ifi44 <- left_join(ifi44_ID, gtypes_long_pres ,by = "ID") %>% filter(pres == 'yes')
+#plotting freq of the dup IDs that map to IFI44 across all INDIVIDUALS not separated by populations.
+ifi44 %>% group_by(ID) %>% tally() %>% ggplot(aes(x=ID, y=n)) + geom_col(fill='darkblue') +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+ifi44_sub <- select(ifi44,ID,sample,pop)
+ifi44_cn <- select(cn_gtypes_long,ID,sample,pop,cn)
+ifi44_cn$cn <- as.numeric(as.character(ifi44_cn$cn))
+left_join(ifi44_sub,ifi44_cn) %>% ggplot(aes(pop,cn)) + geom_col()
+
+dplyr::filter(dup_annot, grepl('GTPase IMAP family member', annot)) %>% select('ID') %>% unique() %>% tally() #23 multiple members 4,7,8
+dplyr::filter(dup_annot, grepl('GTPase IMAP family member 4', annot)) %>% select('ID') %>% unique() %>% tally() #21
+dplyr::filter(dup_annot, grepl('GTPase IMAP family member 7', annot)) %>% select('ID') %>% unique() %>% tally() #9
+dplyr::filter(dup_annot, grepl('GTPase IMAP family member 8', annot)) %>% select('ID') %>% unique() %>% tally() #5
+#The individual tally doesnt add up because for some DUPs they are mapped to multiple LOCs
+dplyr::filter(dup_annot, grepl('scavenger receptor', annot)) %>% select('ID') %>% unique() %>% tally() #37 (multiple types/classes)
+#now find out how many of these dups are present in each population
+
 

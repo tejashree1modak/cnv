@@ -213,7 +213,7 @@ head(binaries)
 # plot the sets with UpSetR
 library(UpSetR)
 upset(binaries, nsets = length(pops), main.bar.color = "SteelBlue", sets.bar.color = "DarkCyan", 
-      sets.x.label = "Number duplicate loci", text.scale = c(rep(1.4, 5), 1), order.by = "freq")
+      sets.x.label = "Number duplicate loci", text.scale = c(rep(1.4, 5), 2), order.by = "freq")
 
 #The bars on the bottom left show total number of duplicate loci for that population
 #The bars at the top show the count of the intersections denoted in the dot matrix below them.
@@ -245,18 +245,43 @@ cn_gtypes_long <- left_join(cn_long, gtypes_long)
 #Converting cn value to 0 for genotypes 0/0 and ./. because they are assumed homologous to reference. 
 cn_gtypes_long <- within(cn_gtypes_long, cn[gtype == '0/0'] <- 0)
 cn_gtypes_long <- within(cn_gtypes_long, cn[gtype == './.'] <- 0)
+cn_gtypes_long$cn <- as.numeric(as.character(cn_gtypes_long$cn))
+#cn stats
+min(cn_gtypes_long[,5], na.rm=T) #-1
+max(cn_gtypes_long[,5], na.rm=T) #20025
+hist(cn_gtypes_long$cn)
+#cn on chr1
 cn_gtypes_long_chr1 <- filter(cn_gtypes_long, CHROM == "NC_035780.1") %>% select(POS, sample, cn) 
 cn_gtypes_long_chr1$cn <- as.numeric(as.character(cn_gtypes_long_chr1$cn))
-cn_chr1_hmap <- ggplot(data = cn_gtypes_long_chr1, mapping = aes(x = POS,y = sample,fill = cn)) + geom_tile() + xlab(label = "Position")
+cn_chr1_hmap <- ggplot(data = cn_gtypes_long_chr1, mapping = aes(x = POS,y = sample,color = -cn)) + 
+  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+scale_color_viridis_c()
 cn_chr1_hmap
+#Chr5
+cn_gtypes_long_chr5 <- filter(cn_gtypes_long, CHROM == "NC_035784.1") %>% select(POS, sample, cn) 
+cn_gtypes_long_chr5$cn <- as.numeric(as.character(cn_gtypes_long_chr5$cn))
+cn_chr5_hmap <- ggplot(data = cn_gtypes_long_chr5, mapping = aes(x = POS,y = sample,color = -cn)) + 
+  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+scale_color_viridis_c()
+cn_chr5_hmap
+#Chr9
+#Chr5
+cn_gtypes_long_chr9 <- filter(cn_gtypes_long, CHROM == "NC_035788.1") %>% select(POS, sample, cn) 
+cn_gtypes_long_chr9$cn <- as.numeric(as.character(cn_gtypes_long_chr9$cn))
+cn_chr9_hmap <- ggplot(data = cn_gtypes_long_chr9, mapping = aes(x = POS,y = sample,color = -cn)) + 
+  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+scale_color_viridis_c()
+cn_chr9_hmap
+
+#trials
+cn_chr1_hmap2 <- ggplot(data = cn_gtypes_long_chr1, mapping = aes(x = POS,y = sample,color = cn)) + 
+  geom_point(aes(cn)) + xlab(label = "Position") +  
+  scale_colour_gradient(name = "Copy Number", low = "#FFFF00", high = "#000080")
+cn_chr1_hmap2
 tmp2 <- filter(cn_gtypes_long_chr1, sample == "CL_1") 
-tmp3 <- ggplot(data= tmp2, mapping = aes(x = POS,y = sample,fill = cn), stat = "identity") + geom_tile() + xlab(label = "Position")
+tmp3 <- ggplot(data= tmp2, mapping = aes(x = POS,y = sample,color = cn), stat = "identity") + geom_tile() + xlab(label = "Position")
 tmp3
 ggplot(tmp2, aes(POS, sample)) +
   geom_raster(aes(fill = cn), interpolate = TRUE)
 tmp2 <- filter(tmp2, cn != 0) 
-  ggplot(tmp2, aes(POS, sample)) + geom_point(aes(fill = cn))
-
+  ggplot(tmp2, aes(POS, sample)) + geom_jitter(aes(color = cn))
 # tmp <- data.matrix(cn_gtypes_long_chr1, rownames.force = NA)
 # heatmap(tmp)
 
@@ -299,14 +324,31 @@ ref_annot_go_kegg <- read.table("/Users/tejashree/Documents/Projects/oyster/exp_
                              sep="\t" , quote="", fill=FALSE, stringsAsFactors = FALSE, header = TRUE)
 colnames(ref_annot_go_kegg) <- c("Sequence_name","Sequence_length","Sequence_description","GO_ID","Enzyme_code","Enzyme_name")
 left_join(dup_loc_xp, ref_annot_go_kegg, by="Sequence_name") %>% head()
+#What % LOCs are mapped to kegg
+ref_annot_go_kegg %>% filter(!is.na(Enzyme_name)) %>% filter(Enzyme_name != "") %>% nrow() #10.4 % (100*6273)/60213
+ref_annot_go_kegg %>% filter(!is.na(GO_ID)) %>% filter(GO_ID != "") %>% nrow() #58.2% (100*35081)/30213
+
 #Extract DUP_IDs, GO_IDs
 dup_go <- left_join(dup_loc_xp, ref_annot_go_kegg, by="Sequence_name") %>% select(ID, GO_ID) %>% unique() 
 #  separate(GO_ID, sep = ";", into = paste("V", 1:13, sep = "_")) 
+#What % dups mapped to GO terms
+dup_go %>% filter(!is.na(GO_ID)) %>% filter(GO_ID != "") %>% nrow() # 62% (8300*100)/13387
+dup_go %>% filter(!is.na(GO_ID)) %>% filter(GO_ID != "") %>% 
+  write.table("/Users/tejashree/Documents/Projects/cnv/scripts/output_files/oyster_cnv/dup_go.txt", append = FALSE, sep = " ",quote = FALSE,
+                                                                         row.names = F, col.names = FALSE)
+
 #separate the GO_IDs and get count for each
 go_vector <- as.data.frame(table(unlist(strsplit(as.character(dup_go$GO_ID), ";"))))
+go_vector_sorted <-  go_vector[order(go_vector$Freq, decreasing=TRUE),] 
+write.table(go_vector_sorted, "/Users/tejashree/Documents/Projects/cnv/delly/go_vector_sorted.txt", append = FALSE, sep = " ",quote = FALSE,
+            row.names = F, col.names = TRUE)
+write.table(go_vector_sorted$Var1, "/Users/tejashree/Documents/Projects/cnv/delly/go_only.txt", append = FALSE, sep = ",",quote = FALSE,
+            row.names = F, col.names = FALSE)
 #Highest freq: molecular funtion, ion binding, cellular component, signal transduction, cellular protein modification process
 #Extract DUP_IDs, EC#s :pathway mapping 
 dup_kegg <- left_join(dup_loc_xp, ref_annot_go_kegg, by="Sequence_name") %>% select(ID, Enzyme_name) %>% unique() 
+#What % dups mapped to an EC number via kegg
+dup_kegg %>% filter(!is.na(Enzyme_name)) %>% filter(Enzyme_name != "") %>% nrow() # 11% (1420*100)/13387
 #separate the enzyme names and get count for each
 kegg_vector <- as.data.frame(table(unlist(strsplit(as.character(dup_kegg$Enzyme_name), ";"))))
 #Highest:Nucleoside-triphosphate phosphatase,Acting on peptide bonds (peptidases),Protein-serine/threonine phosphatase,
@@ -326,6 +368,7 @@ ifi44_sub <- select(ifi44,ID,sample,pop)
 ifi44_cn <- select(cn_gtypes_long,ID,sample,pop,cn)
 ifi44_cn$cn <- as.numeric(as.character(ifi44_cn$cn))
 left_join(ifi44_sub,ifi44_cn) %>% ggplot(aes(pop,cn)) + geom_col()
+
 
 dplyr::filter(dup_annot, grepl('GTPase IMAP family member', annot)) %>% select('ID') %>% unique() %>% tally() #23 multiple members 4,7,8
 dplyr::filter(dup_annot, grepl('GTPase IMAP family member 4', annot)) %>% select('ID') %>% unique() %>% tally() #21

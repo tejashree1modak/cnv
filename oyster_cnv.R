@@ -14,7 +14,7 @@ library(scales)
 
 #gene data - sizes but not more info
 oysterdup <- read.table("/Users/tejashree/Documents/Projects/cnv/delly/oysterduplicate_sort.bed",stringsAsFactors = FALSE)
-oysterdup$l <- oysterdup$V3 - oysterdup$V2
+oysterdup$l <- oysterdup$V3 - oysterdup$V2 
 ggplot(oysterdup, aes(l))+geom_histogram(binwidth = 60)+ylim(c(0,100))+
   xlim(c(0,10000))
 
@@ -37,7 +37,9 @@ colnames(oysterdup2)<-header
 oysterdup3 <-dplyr::filter(oysterdup2,FILTER=="PASS")
 oysterdup3$end <- str_split(oysterdup3$INFO, ';') %>%
   map_chr(5) %>% str_split('=') %>% map_chr(2) %>% as.integer()
-oysterdup3$length <- oysterdup3$end - oysterdup3$POS
+oysterdup3$length <- oysterdup3$end - oysterdup3$POS #Smallest is 160bp and largest is 999,122bp
+filter(oysterdup3, length > 1000) %>% nrow() #6551 So if we filter the dups based on len 
+                                                    #and only keep >1kb we will only have 6551 instead of 13387
 
 #funtion to pull out number of each genotype from a col in the vcf for a sample
 gett <- function(bedout_col){
@@ -169,16 +171,25 @@ ggplot(pos_chr10,aes(POS,num_alts,color=pop))+geom_point()+labs(title = "Chr10",
 # cowplot::plot_grid(plotlist=pos_chr_plots,ncol=2,nrow=2, labels = chr_subset)
 
 #try adding a new column called type with inbred,wild and selected values for each population and while plotting use group=type
-pop <- c("CL","CLP","CS","DEBY","HC","HCVA","HG","HI","LM","LOLA","NEH","NG","OBOYS2","SL","SM","UMFS")
-type <- c("W","W","W","S","W","W","I","W","W","S","S","I","S","W","W","S")
-pop_type <- data.frame(pop,type)
-colnames(pop_type) <- c("pop","type")
-pop_type[] <- lapply(pop_type, as.character)
-pop_alts_per_chrom <- left_join(pop_alts_per_chrom,pop_type,by='pop')
+# pop <- c("CL","CLP","CS","DEBY","HC","HCVA","HG","HI","LM","LOLA","NEH","NG","OBOYS2","SL","SM","UMFS")
+# type <- c("W","W","W","S","W","W","I","W","W","S","S","I","S","W","W","S")
+# pop_type <- data.frame(pop,type)
+# colnames(pop_type) <- c("pop","type")
+# pop_type[] <- lapply(pop_type, as.character)
+# pop_alts_per_chrom <- left_join(pop_alts_per_chrom,pop_type,by='pop')
 #Frequency of dups per chromosome for all populations
 pop_alts_per_chrom <- pop_num_pos_alts_present_chrom %>% group_by(pop,CHROM) %>% 
   summarize(num_alts = sum(num_alts))
 ggplot(pop_alts_per_chrom, aes(x=CHROM,y=num_alts, color=pop)) + geom_bar(stat = "identity", fill="white") + 
+  labs(x="Chromosome Number", y="Frequency of CNVs")
+# normalized by chromosome size
+chrom_len <- data.frame(CHROM=c("NC_035780.1","NC_035781.1","NC_035782.1","NC_035783.1","NC_035784.1","NC_035785.1",
+                 "NC_035786.1", "NC_035787.1","NC_035788.1","NC_035789.1"), 
+           start=c(1,1,1,1,1,1,1,1,1,1), 
+           end=c(65668440,61752955,77061148,59691872,98698416,51258098,57830854,75944018,104168038,32650045))
+chrom_len$len <- chrom_len$end - chrom_len$start
+pop_alts_per_chrom_len <- left_join(pop_alts_per_chrom, chrom_len, by = "CHROM")
+ggplot(pop_alts_per_chrom_len, aes(x=CHROM,y=(num_alts/len), color=pop)) + geom_bar(stat = "identity", fill="white") + 
   labs(x="Chromosome Number", y="Frequency of CNVs")
 # Proportion of dups per chromosome for all populations 
 pop_alts_per_chrom %>% group_by(pop) %>% mutate(prop_alts = num_alts/sum(num_alts)) %>% 
@@ -253,28 +264,70 @@ hist(cn_gtypes_long$cn)
 #cn on chr1
 cn_gtypes_long_chr1 <- filter(cn_gtypes_long, CHROM == "NC_035780.1") %>% select(POS, sample, cn) 
 cn_gtypes_long_chr1$cn <- as.numeric(as.character(cn_gtypes_long_chr1$cn))
-cn_chr1_hmap <- ggplot(data = cn_gtypes_long_chr1, mapping = aes(x = POS,y = sample,color = -cn)) + 
-  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+scale_color_viridis_c()
-cn_chr1_hmap
+cn_chr1_hmap <- ggplot(data = cn_gtypes_long_chr1, mapping = aes(x = POS,y = sample,color = cn)) + 
+  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+scale_color_viridis_c(direction = -1)
+# cn_chr1_hmap + abline(x = 32834220, pch=24, col="red", cex = 5)
+cn_chr1_hmap + geom_point(data=cn_gtypes_long_chr1, aes(x=32834220, y=1), col="red",pch=24, cex = 3)
+#Chr2
+cn_gtypes_long_chr2 <- filter(cn_gtypes_long, CHROM == "NC_035781.1") %>% select(POS, sample, cn) 
+cn_gtypes_long_chr2$cn <- as.numeric(as.character(cn_gtypes_long_chr2$cn))
+cn_chr2_hmap <- ggplot(data = cn_gtypes_long_chr2, mapping = aes(x = POS,y = sample,color = cn)) + 
+  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 2") + scale_color_viridis_c(direction = -1)
+cn_chr2_hmap + geom_point(data=cn_gtypes_long_chr2, aes(x=30876477, y=1), col="red",pch=24, cex = 3)
+#Chr3
+cn_gtypes_long_chr3 <- filter(cn_gtypes_long, CHROM == "NC_035782.1") %>% select(POS, sample, cn) 
+cn_gtypes_long_chr3$cn <- as.numeric(as.character(cn_gtypes_long_chr3$cn))
+cn_chr3_hmap <- ggplot(data = cn_gtypes_long_chr3, mapping = aes(x = POS,y = sample,color = log(cn))) + 
+  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 3") +scale_color_viridis_c(direction = -1, na.value = "#f6f7a4")
+cn_chr3_hmap + geom_point(data=cn_gtypes_long_chr3, aes(x=(77061147/2), y=1), col="red",pch=24, cex = 3)
+#Chr4
+cn_gtypes_long_chr4 <- filter(cn_gtypes_long, CHROM == "NC_035783.1") %>% select(POS, sample, cn) 
+cn_gtypes_long_chr4$cn <- as.numeric(as.character(cn_gtypes_long_chr4$cn))
+cn_chr4_hmap <- ggplot(data = cn_gtypes_long_chr4, mapping = aes(x = POS,y = sample,color = log(cn))) + 
+  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 4") +scale_color_viridis_c(direction = -1, na.value = "#f6f7a4")
+cn_chr4_hmap + geom_point(data=cn_gtypes_long_chr4, aes(x=(59691871/2), y=1), col="red",pch=24, cex = 3)
 #Chr5
 cn_gtypes_long_chr5 <- filter(cn_gtypes_long, CHROM == "NC_035784.1") %>% select(POS, sample, cn) 
 cn_gtypes_long_chr5$cn <- as.numeric(as.character(cn_gtypes_long_chr5$cn))
-cn_chr5_hmap <- ggplot(data = cn_gtypes_long_chr5, mapping = aes(x = POS,y = sample,color = -cn)) + 
-  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+scale_color_viridis_c()
-cn_chr5_hmap
+cn_chr5_hmap <- ggplot(data = cn_gtypes_long_chr5, mapping = aes(x = POS,y = sample,color = log(cn))) + 
+  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+scale_color_viridis_c(direction = -1, na.value = "#f6f7a4")
+cn_chr5_hmap + geom_point(data=cn_gtypes_long_chr5, aes(x=49349208, y=1), col="red",pch=24, cex = 3)
+#Chr6
+cn_gtypes_long_chr6 <- filter(cn_gtypes_long, CHROM == "NC_035785.1") %>% select(POS, sample, cn) 
+cn_gtypes_long_chr6$cn <- as.numeric(as.character(cn_gtypes_long_chr6$cn))
+cn_chr6_hmap <- ggplot(data = cn_gtypes_long_chr6, mapping = aes(x = POS,y = sample,color = log(cn))) + 
+  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 6") +scale_color_viridis_c(direction = -1, na.value = "#f6f7a4")
+cn_chr6_hmap + geom_point(data=cn_gtypes_long_chr6, aes(x=(51258097/2), y=1), col="red",pch=24, cex = 3)
+#Chr7
+cn_gtypes_long_chr7 <- filter(cn_gtypes_long, CHROM == "NC_035786.1") %>% select(POS, sample, cn) 
+cn_gtypes_long_chr7$cn <- as.numeric(as.character(cn_gtypes_long_chr7$cn))
+cn_chr7_hmap <- ggplot(data = cn_gtypes_long_chr7, mapping = aes(x = POS,y = sample,color = cn)) + 
+  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 7") +scale_color_viridis_c(direction = -1, na.value = "#f6f7a4")
+cn_chr7_hmap + geom_point(data=cn_gtypes_long_chr7, aes(x=(57830853/2), y=1), col="red",pch=24, cex = 3)
+#Chr8
+cn_gtypes_long_chr8 <- filter(cn_gtypes_long, CHROM == "NC_035787.1") %>% select(POS, sample, cn) 
+cn_gtypes_long_chr8cn <- as.numeric(as.character(cn_gtypes_long_chr8$cn))
+cn_chr8_hmap <- ggplot(data = cn_gtypes_long_chr8, mapping = aes(x = POS,y = sample,color = log(cn))) + 
+  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 8") +scale_color_viridis_c(direction = -1, na.value = "#f6f7a4")
+cn_chr8_hmap + geom_point(data=cn_gtypes_long_chr8, aes(x=(75944017/2), y=1), col="red",pch=24, cex = 3)
 #Chr9
-#Chr5
 cn_gtypes_long_chr9 <- filter(cn_gtypes_long, CHROM == "NC_035788.1") %>% select(POS, sample, cn) 
 cn_gtypes_long_chr9$cn <- as.numeric(as.character(cn_gtypes_long_chr9$cn))
-cn_chr9_hmap <- ggplot(data = cn_gtypes_long_chr9, mapping = aes(x = POS,y = sample,color = -cn)) + 
-  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+scale_color_viridis_c()
-cn_chr9_hmap
+cn_chr9_hmap <- ggplot(data = cn_gtypes_long_chr9, mapping = aes(x = POS,y = sample,color = log(cn))) + 
+  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 9") +scale_color_viridis_c(direction = -1, na.value = "#f6f7a4")
+cn_chr9_hmap + geom_point(data=cn_gtypes_long_chr9, aes(x=(104168037/2), y=1), col="red",pch=24, cex = 3)
+#Chr10
+cn_gtypes_long_chr10 <- filter(cn_gtypes_long, CHROM == "NC_035789.1") %>% select(POS, sample, cn) 
+cn_gtypes_long_chr10$cn <- as.numeric(as.character(cn_gtypes_long_chr10$cn))
+cn_chr10_hmap <- ggplot(data = cn_gtypes_long_chr10, mapping = aes(x = POS,y = sample,color = cn)) + 
+  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 9") + scale_color_viridis_c(direction = -1)
+cn_chr10_hmap + geom_point(data=cn_gtypes_long_chr10, aes(x=16325022, y=1), col="red",pch=24, cex = 3)
 
 #trials
-cn_chr1_hmap2 <- ggplot(data = cn_gtypes_long_chr1, mapping = aes(x = POS,y = sample,color = cn)) + 
-  geom_point(aes(cn)) + xlab(label = "Position") +  
-  scale_colour_gradient(name = "Copy Number", low = "#FFFF00", high = "#000080")
-cn_chr1_hmap2
+cn_chr5_hmap2 <- ggplot(data = cn_gtypes_long_chr5, mapping = aes(x = POS,y = sample,color = log(cn))) + 
+  geom_point() + xlab(label = "Position") +  
+  scale_colour_gradient2(name = "Copy Number", low = "#f6f7a4", mid = "#208000",high = "#000080", midpoint = 500)
+cn_chr5_hmap2
 tmp2 <- filter(cn_gtypes_long_chr1, sample == "CL_1") 
 tmp3 <- ggplot(data= tmp2, mapping = aes(x = POS,y = sample,color = cn), stat = "identity") + geom_tile() + xlab(label = "Position")
 tmp3
@@ -377,5 +430,15 @@ dplyr::filter(dup_annot, grepl('GTPase IMAP family member 8', annot)) %>% select
 #The individual tally doesnt add up because for some DUPs they are mapped to multiple LOCs
 dplyr::filter(dup_annot, grepl('scavenger receptor', annot)) %>% select('ID') %>% unique() %>% tally() #37 (multiple types/classes)
 #now find out how many of these dups are present in each population
+
+###Vst calculations###
+# Vpopx is the CN variance for each respective population
+# Npopx is the number of individuals in each population
+# Ntotal is the total sample size
+# Vtotal is total variance
+#Above is calculated for each 500bp window on each chromosome
+
+
+
 
 

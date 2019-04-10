@@ -13,6 +13,25 @@ kp <- plotKaryotype(genome = custom.genome)
 cnv <- toGRanges("/Users/tejashree/Documents/Projects/cnv/delly/oysterduplicate_sort.bed")
 exon <- toGRanges("/Users/tejashree/Documents/Projects/cnv/annot/exon.bed")
 
+#ifi44 dup distribution against ifi44 exon distribution
+ifi44_dist <- toGRanges("/Users/tejashree/Documents/Projects/cnv/scripts/output_files/oyster_cnv/ifi44_dup.bed")
+ifi44_exons <- toGRanges("/Users/tejashree/Documents/Projects/cnv/annot/ifi44_exon.bed")
+
+#gimap dup distribution against ifi44 exon distribution
+gimap_dist <- toGRanges("/Users/tejashree/Documents/Projects/cnv/scripts/output_files/oyster_cnv/gimap_dup.bed")
+gimap_exons <- toGRanges("/Users/tejashree/Documents/Projects/cnv/annot/gimap_exon.bed")
+
 #kpPlotDensity(kp, data=cnv, window.size = 0.5e6, col = "blue")
 kpPlotDensity(kp, data=cnv, window.size = 300000, col = "red", r0=0.5, r1=1)
 kpPlotDensity(kp, data=exon, window.size = 300000, col = "blue", r0=0.5, r1=0)
+
+#Map IFI44 dups and ifi44 exons on one plot
+#IFI44 dups
+kpPlotDensity(kp, data=ifi44_dist, window.size = 500, col = "green", r0=0.5, r1=1)
+kpPlotDensity(kp, data=ifi44_exons, window.size = 500, col = "orchid", r0=0.5, r1=0)
+
+#Map gimap dups and gimap exons on one plot
+#GIMAP dups
+kpPlotDensity(kp, data=gimap_dist, window.size = 500, col = "green", r0=0.5, r1=1)
+kpPlotDensity(kp, data=gimap_exons, window.size = 500, col = "orchid", r0=0.5, r1=0)
+

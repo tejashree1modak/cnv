@@ -264,65 +264,74 @@ hist(cn_gtypes_long$cn)
 #cn on chr1
 cn_gtypes_long_chr1 <- filter(cn_gtypes_long, CHROM == "NC_035780.1") %>% select(POS, sample, cn) 
 cn_gtypes_long_chr1$cn <- as.numeric(as.character(cn_gtypes_long_chr1$cn))
-cn_chr1_hmap <- ggplot(data = cn_gtypes_long_chr1, mapping = aes(x = POS,y = sample,color = cn)) + 
-  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+scale_color_viridis_c(direction = -1)
-# cn_chr1_hmap + abline(x = 32834220, pch=24, col="red", cex = 5)
-cn_chr1_hmap + geom_point(data=cn_gtypes_long_chr1, aes(x=32834220, y=1), col="red",pch=24, cex = 3)
+filter(cn_gtypes_long_chr1, cn > 500) %>% select(cn)%>% hist()
+cn_chr1_hmap <- ggplot(data = cn_gtypes_long_chr1, mapping = aes(x = POS,y = sample,color = log(cn))) + 
+  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 1") +scale_color_viridis_c(direction = -1, na.value = "#f6f7a4",limits = c(0, 10))
+# cn_chr1_hmap + geom_point(data=cn_gtypes_long_chr1, aes(x=65668439/2, y=1), col="red",pch=24, cex = 3)
+cn_chr1_hmap + geom_vline(xintercept = (65668439/2), color = "red", size=0.3)
 #Chr2
 cn_gtypes_long_chr2 <- filter(cn_gtypes_long, CHROM == "NC_035781.1") %>% select(POS, sample, cn) 
 cn_gtypes_long_chr2$cn <- as.numeric(as.character(cn_gtypes_long_chr2$cn))
-cn_chr2_hmap <- ggplot(data = cn_gtypes_long_chr2, mapping = aes(x = POS,y = sample,color = cn)) + 
-  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 2") + scale_color_viridis_c(direction = -1)
-cn_chr2_hmap + geom_point(data=cn_gtypes_long_chr2, aes(x=30876477, y=1), col="red",pch=24, cex = 3)
+cn_chr2_hmap <- ggplot(data = cn_gtypes_long_chr2, mapping = aes(x = POS,y = sample,color = log(cn))) + 
+  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 2") + scale_color_viridis_c(direction = -1, na.value = "#f6f7a4",limits = c(0, 10))
+# cn_chr2_hmap + geom_point(data=cn_gtypes_long_chr2, aes(x=30876477, y=1), col="red",pch=24, cex = 3)
+cn_chr2_hmap + geom_vline(xintercept = (61752954/2), color = "red", size=0.3)
 #Chr3
 cn_gtypes_long_chr3 <- filter(cn_gtypes_long, CHROM == "NC_035782.1") %>% select(POS, sample, cn) 
 cn_gtypes_long_chr3$cn <- as.numeric(as.character(cn_gtypes_long_chr3$cn))
 cn_chr3_hmap <- ggplot(data = cn_gtypes_long_chr3, mapping = aes(x = POS,y = sample,color = log(cn))) + 
-  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 3") +scale_color_viridis_c(direction = -1, na.value = "#f6f7a4")
-cn_chr3_hmap + geom_point(data=cn_gtypes_long_chr3, aes(x=(77061147/2), y=1), col="red",pch=24, cex = 3)
+  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 3") +scale_color_viridis_c(direction = -1, na.value = "#f6f7a4",limits = c(0, 10))
+# cn_chr3_hmap + geom_point(data=cn_gtypes_long_chr3, aes(x=(77061147/2), y=1), col="red",pch=24, cex = 3)
+cn_chr3_hmap + geom_vline(xintercept = (77061147/2), color = "red", size=0.3)
 #Chr4
 cn_gtypes_long_chr4 <- filter(cn_gtypes_long, CHROM == "NC_035783.1") %>% select(POS, sample, cn) 
 cn_gtypes_long_chr4$cn <- as.numeric(as.character(cn_gtypes_long_chr4$cn))
 cn_chr4_hmap <- ggplot(data = cn_gtypes_long_chr4, mapping = aes(x = POS,y = sample,color = log(cn))) + 
-  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 4") +scale_color_viridis_c(direction = -1, na.value = "#f6f7a4")
-cn_chr4_hmap + geom_point(data=cn_gtypes_long_chr4, aes(x=(59691871/2), y=1), col="red",pch=24, cex = 3)
+  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 4") +scale_color_viridis_c(direction = -1, na.value = "#f6f7a4",limits = c(0, 10))
+# cn_chr4_hmap + geom_point(data=cn_gtypes_long_chr4, aes(x=(59691871/2), y=1), col="red",pch=24, cex = 3)
+cn_chr4_hmap + geom_vline(xintercept = (59691871/2), color = "red", size=0.3)
 #Chr5
 cn_gtypes_long_chr5 <- filter(cn_gtypes_long, CHROM == "NC_035784.1") %>% select(POS, sample, cn) 
 cn_gtypes_long_chr5$cn <- as.numeric(as.character(cn_gtypes_long_chr5$cn))
 cn_chr5_hmap <- ggplot(data = cn_gtypes_long_chr5, mapping = aes(x = POS,y = sample,color = log(cn))) + 
-  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+scale_color_viridis_c(direction = -1, na.value = "#f6f7a4")
-cn_chr5_hmap + geom_point(data=cn_gtypes_long_chr5, aes(x=49349208, y=1), col="red",pch=24, cex = 3)
+  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 5") +scale_color_viridis_c(direction = -1, na.value = "#f6f7a4",limits = c(0, 10))
+# cn_chr5_hmap + geom_point(data=cn_gtypes_long_chr5, aes(x=(98698415/2), y=1), col="red",pch=24, cex = 3)
+cn_chr5_hmap + geom_vline(xintercept = (98698415/2), color = "red", size=0.3)
 #Chr6
 cn_gtypes_long_chr6 <- filter(cn_gtypes_long, CHROM == "NC_035785.1") %>% select(POS, sample, cn) 
 cn_gtypes_long_chr6$cn <- as.numeric(as.character(cn_gtypes_long_chr6$cn))
 cn_chr6_hmap <- ggplot(data = cn_gtypes_long_chr6, mapping = aes(x = POS,y = sample,color = log(cn))) + 
-  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 6") +scale_color_viridis_c(direction = -1, na.value = "#f6f7a4")
-cn_chr6_hmap + geom_point(data=cn_gtypes_long_chr6, aes(x=(51258097/2), y=1), col="red",pch=24, cex = 3)
+  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 6") +scale_color_viridis_c(direction = -1, na.value = "#f6f7a4",limits = c(0, 10))
+# cn_chr6_hmap + geom_point(data=cn_gtypes_long_chr6, aes(x=(51258097/2), y=1), col="red",pch=24, cex = 3)
+cn_chr6_hmap + geom_vline(xintercept = (51258097/2), color = "red", size=0.3)
 #Chr7
 cn_gtypes_long_chr7 <- filter(cn_gtypes_long, CHROM == "NC_035786.1") %>% select(POS, sample, cn) 
 cn_gtypes_long_chr7$cn <- as.numeric(as.character(cn_gtypes_long_chr7$cn))
-cn_chr7_hmap <- ggplot(data = cn_gtypes_long_chr7, mapping = aes(x = POS,y = sample,color = cn)) + 
-  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 7") +scale_color_viridis_c(direction = -1, na.value = "#f6f7a4")
-cn_chr7_hmap + geom_point(data=cn_gtypes_long_chr7, aes(x=(57830853/2), y=1), col="red",pch=24, cex = 3)
+cn_chr7_hmap <- ggplot(data = cn_gtypes_long_chr7, mapping = aes(x = POS,y = sample,color = log(cn))) + 
+  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 7") +scale_color_viridis_c(direction = -1, na.value = "#f6f7a4",limits = c(0, 10))
+# cn_chr7_hmap + geom_point(data=cn_gtypes_long_chr7, aes(x=(57830853/2), y=1), col="red",pch=24, cex = 3)
+cn_chr7_hmap + geom_vline(xintercept = (57830853/2), color = "red", size=0.3)
 #Chr8
 cn_gtypes_long_chr8 <- filter(cn_gtypes_long, CHROM == "NC_035787.1") %>% select(POS, sample, cn) 
 cn_gtypes_long_chr8cn <- as.numeric(as.character(cn_gtypes_long_chr8$cn))
 cn_chr8_hmap <- ggplot(data = cn_gtypes_long_chr8, mapping = aes(x = POS,y = sample,color = log(cn))) + 
-  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 8") +scale_color_viridis_c(direction = -1, na.value = "#f6f7a4")
-cn_chr8_hmap + geom_point(data=cn_gtypes_long_chr8, aes(x=(75944017/2), y=1), col="red",pch=24, cex = 3)
+  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 8") +scale_color_viridis_c(direction = -1, na.value = "#f6f7a4",limits = c(0, 10))
+# cn_chr8_hmap + geom_point(data=cn_gtypes_long_chr8, aes(x=(75944017/2), y=1), col="red",pch=24, cex = 3)
+cn_chr8_hmap + geom_vline(xintercept = (75944017/2), color = "red", size=0.3)
 #Chr9
 cn_gtypes_long_chr9 <- filter(cn_gtypes_long, CHROM == "NC_035788.1") %>% select(POS, sample, cn) 
 cn_gtypes_long_chr9$cn <- as.numeric(as.character(cn_gtypes_long_chr9$cn))
 cn_chr9_hmap <- ggplot(data = cn_gtypes_long_chr9, mapping = aes(x = POS,y = sample,color = log(cn))) + 
-  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 9") +scale_color_viridis_c(direction = -1, na.value = "#f6f7a4")
-cn_chr9_hmap + geom_point(data=cn_gtypes_long_chr9, aes(x=(104168037/2), y=1), col="red",pch=24, cex = 3)
+  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 9") +scale_color_viridis_c(direction = -1, na.value = "#f6f7a4",limits = c(0, 10))
+# cn_chr9_hmap + geom_point(data=cn_gtypes_long_chr9, aes(x=(104168037/2), y=1), col="red",pch=24, cex = 3)
+cn_chr9_hmap + geom_vline(xintercept = (104168037/2), color = "red", size=0.3)
 #Chr10
 cn_gtypes_long_chr10 <- filter(cn_gtypes_long, CHROM == "NC_035789.1") %>% select(POS, sample, cn) 
 cn_gtypes_long_chr10$cn <- as.numeric(as.character(cn_gtypes_long_chr10$cn))
-cn_chr10_hmap <- ggplot(data = cn_gtypes_long_chr10, mapping = aes(x = POS,y = sample,color = cn)) + 
-  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 9") + scale_color_viridis_c(direction = -1)
-cn_chr10_hmap + geom_point(data=cn_gtypes_long_chr10, aes(x=16325022, y=1), col="red",pch=24, cex = 3)
-
+cn_chr10_hmap <- ggplot(data = cn_gtypes_long_chr10, mapping = aes(x = POS,y = sample,color = log(cn))) + 
+  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 10") + scale_color_viridis_c(direction = -1, na.value = "#f6f7a4",limits = c(0, 10))
+# cn_chr10_hmap + geom_point(data=cn_gtypes_long_chr10, aes(x=32650044/2, y=1), col="red",pch=24, cex = 3)
+cn_chr10_hmap + geom_vline(xintercept = (32650044/2), color = "red", size=0.3)
 #trials
 cn_chr5_hmap2 <- ggplot(data = cn_gtypes_long_chr5, mapping = aes(x = POS,y = sample,color = log(cn))) + 
   geom_point() + xlab(label = "Position") +  
@@ -415,14 +424,30 @@ ifi44_ID <- dplyr::filter(dup_annot, grepl('interferon-induced protein 44', anno
 gtypes_long_pres <- gtypes_long %>% mutate(pres = ifelse(gtypes_long$num_alts > 0, 'yes', 'no'))
 ifi44 <- left_join(ifi44_ID, gtypes_long_pres ,by = "ID") %>% filter(pres == 'yes')
 #plotting freq of the dup IDs that map to IFI44 across all INDIVIDUALS not separated by populations.
-ifi44 %>% group_by(ID) %>% tally() %>% ggplot(aes(x=ID, y=n)) + geom_col(fill='darkblue') +
+ifi44 %>% group_by(ID) %>% tally() %>% ggplot(aes(x=ID, y=n)) + geom_col(fill='darkblue') + ylab(label = "Number of samples") +
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 ifi44_sub <- select(ifi44,ID,sample,pop)
-ifi44_cn <- select(cn_gtypes_long,ID,sample,pop,cn)
-ifi44_cn$cn <- as.numeric(as.character(ifi44_cn$cn))
-left_join(ifi44_sub,ifi44_cn) %>% ggplot(aes(pop,cn)) + geom_col()
+cn <- select(cn_gtypes_long,ID,sample,pop,cn)
+cn$cn <- as.numeric(as.character(cn$cn))
+left_join(ifi44_sub,cn) %>% ggplot(aes(pop,cn)) + geom_col()
+left_join(ifi44_sub,cn) %>% ggplot(aes(cn,sample, color =ID)) + geom_jitter() + xlim(c(0,15))#removing outlier 
+left_join(ifi44_sub,cn) %>% ggplot(aes(pop,cn,color=ID)) + geom_bar(stat = "identity", fill="white") + 
+  labs(x="Populations", y="Copy Number")
+left_join(ifi44_sub,cn) %>% ggplot(aes(cn, sample,color=ID)) + geom_bar(stat = "identity", fill="white") + 
+  labs(y="Samples", x="Copy Number")
+#Inter and intra population copy number variation
+left_join(ifi44_sub,cn) %>% ggplot(aes(cn,pop, color =pop)) + facet_wrap(~ID) + geom_jitter() + xlim(c(0,15))#removing outlier 
+left_join(ifi44_sub,cn) %>% ggplot(aes(cn,ID, color =ID)) + facet_wrap(~pop) + geom_jitter() + xlim(c(0,15))#removing outlier 
+#Getting the sequences of all DUP_IDs mapped as IFI44
+#Getting ready a bedfile for bedtools to get the fasta
+left_join(ifi44_ID,oysterdup3) %>% select(CHROM, POS, end, ID) %>%
+  write.table("/Users/tejashree/Documents/Projects/cnv/scripts/output_files/oyster_cnv/ifi44_dup.bed", append = FALSE, sep = "\t",quote = FALSE,
+              row.names = F, col.names = FALSE)
+#The DUPs are on 3 diff chromosomes 1,8 and 9. The ref genome has 33 genes (unique LOCs annotated as IFI44) and are present on the same 3 chromosomes
+#Dups and exons mapped on ref genome using script density_plot.R shows that some dups are overlapping, some span the exon some dont, 
+#dups are present in 3 of the 4 regions where IFI44 exons are mapped. 
 
-
+#GIMAP genes
 dplyr::filter(dup_annot, grepl('GTPase IMAP family member', annot)) %>% select('ID') %>% unique() %>% tally() #23 multiple members 4,7,8
 dplyr::filter(dup_annot, grepl('GTPase IMAP family member 4', annot)) %>% select('ID') %>% unique() %>% tally() #21
 dplyr::filter(dup_annot, grepl('GTPase IMAP family member 7', annot)) %>% select('ID') %>% unique() %>% tally() #9
@@ -430,6 +455,29 @@ dplyr::filter(dup_annot, grepl('GTPase IMAP family member 8', annot)) %>% select
 #The individual tally doesnt add up because for some DUPs they are mapped to multiple LOCs
 dplyr::filter(dup_annot, grepl('scavenger receptor', annot)) %>% select('ID') %>% unique() %>% tally() #37 (multiple types/classes)
 #now find out how many of these dups are present in each population
+#performing same analysis on GIMAP dups as IFI44
+gimap_ID <- dplyr::filter(dup_annot, grepl('GTPase IMAP family member', annot)) %>% select('ID') %>% unique()
+gimap <- left_join(gimap_ID, gtypes_long_pres ,by = "ID") %>% filter(pres == 'yes')
+#plotting freq of the dup IDs that map to GIMAP across all INDIVIDUALS not separated by populations.
+gimap %>% group_by(ID) %>% tally() %>% ggplot(aes(x=ID, y=n)) + geom_col(fill='darkblue') + ylab(label = "Number of samples") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+gimap_sub <- select(gimap,ID,sample,pop)
+left_join(gimap_sub,cn) %>% ggplot(aes(pop,cn)) + geom_col()
+#Inter and intra population copy number variation
+left_join(gimap_sub,cn) %>% ggplot(aes(cn,pop, color =pop)) + facet_wrap(~ID) + geom_jitter()  
+left_join(gimap_sub,cn) %>% ggplot(aes(cn,ID, color =ID)) + facet_wrap(~pop) + geom_jitter() 
+#Getting the sequences of all DUP_IDs mapped as GIMAP
+#Getting ready a bedfile for bedtools to get the fasta
+left_join(gimap_ID,oysterdup3) %>% select(CHROM, POS, end, ID) %>% 
+  write.table("/Users/tejashree/Documents/Projects/cnv/scripts/output_files/oyster_cnv/gimap_dup.bed", append = FALSE, sep = "\t",quote = FALSE,
+              row.names = F, col.names = FALSE)
+#GIMAP dups present on 4 chromosomes:1,6,7,8
+#To get fasta of the dups scp gimap_dup.bed to bluewaves and use 
+#bedtools getfasta -fi /data3/marine_diseases_lab/tejashree/Bio_project_SRA/cvir_genome/cvir_edited.fa -bed gimap_dup.bed -fo gimap_dup.fa -name
+#scp file back to cnv_output_files
+#cat /Users/tejashree/Documents/Projects/cnv/annot/gimap_exon.bed | cut -f1 | uniq -c will show the distribution of exons on each chromosome
+#gimap genes are present on 7 different chromosomes! #2,4,5,6,7,8,9
+#The ref genome has 55 genes (unique LOCs annotated as GTPase IMAP family member)
 
 ###Vst calculations###
 # Vpopx is the CN variance for each respective population

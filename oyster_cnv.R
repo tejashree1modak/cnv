@@ -332,24 +332,16 @@ cn_chr10_hmap <- ggplot(data = cn_gtypes_long_chr10, mapping = aes(x = POS,y = s
   geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 10") + scale_color_viridis_c(direction = -1, na.value = "#f6f7a4",limits = c(0, 10))
 # cn_chr10_hmap + geom_point(data=cn_gtypes_long_chr10, aes(x=32650044/2, y=1), col="red",pch=24, cex = 3)
 cn_chr10_hmap + geom_vline(xintercept = (32650044/2), color = "red", size=0.3)
-#trials
-cn_chr5_hmap2 <- ggplot(data = cn_gtypes_long_chr5, mapping = aes(x = POS,y = sample,color = log(cn))) + 
-  geom_point() + xlab(label = "Position") +  
-  scale_colour_gradient2(name = "Copy Number", low = "#f6f7a4", mid = "#208000",high = "#000080", midpoint = 500)
-cn_chr5_hmap2
-tmp2 <- filter(cn_gtypes_long_chr1, sample == "CL_1") 
-tmp3 <- ggplot(data= tmp2, mapping = aes(x = POS,y = sample,color = cn), stat = "identity") + geom_tile() + xlab(label = "Position")
-tmp3
-ggplot(tmp2, aes(POS, sample)) +
-  geom_raster(aes(fill = cn), interpolate = TRUE)
-tmp2 <- filter(tmp2, cn != 0) 
-  ggplot(tmp2, aes(POS, sample)) + geom_jitter(aes(color = cn))
-# tmp <- data.matrix(cn_gtypes_long_chr1, rownames.force = NA)
-# heatmap(tmp)
 
-  # ggplot(cn_gtypes_long_chr1, aes(POS,cn,fill=cn))+ geom_point() +
-  # labs(title = "Chr1", x = "Position", y = "Copy Number") +
-  # xlim(1,65668440)+ scale_x_continuous(labels = comma)
+#### Filteration #####
+#Get dups common to all populations since they are likely artifacts 
+common_dups <- pop_num_alts_present %>% group_by(ID) %>% tally(sort = TRUE) %>% head(961) %>% select(ID)
+
+##Repeat Masker##
+#Repeat locations as shown by repeat masker out file
+repeats <- read.table("/Users/tejashree/Documents/Projects/cnv/genome/repeat_masker/Cvir_genome_repeats.txt", 
+                      sep="\t" , header = TRUE, skip = 1, stringsAsFactors = FALSE)
+repeats$len <- repeats$end - repeats$begin
 
 ###### ANALYSIS POST ANNOTATION #######
 # Annotating dups 
@@ -471,13 +463,29 @@ left_join(gimap_sub,cn) %>% ggplot(aes(cn,ID, color =ID)) + facet_wrap(~pop) + g
 left_join(gimap_ID,oysterdup3) %>% select(CHROM, POS, end, ID) %>% 
   write.table("/Users/tejashree/Documents/Projects/cnv/scripts/output_files/oyster_cnv/gimap_dup.bed", append = FALSE, sep = "\t",quote = FALSE,
               row.names = F, col.names = FALSE)
-#GIMAP dups present on 4 chromosomes:1,6,7,8
+#GIMAP dups present on 4 chromosomes:2,6,7,8
 #To get fasta of the dups scp gimap_dup.bed to bluewaves and use 
 #bedtools getfasta -fi /data3/marine_diseases_lab/tejashree/Bio_project_SRA/cvir_genome/cvir_edited.fa -bed gimap_dup.bed -fo gimap_dup.fa -name
 #scp file back to cnv_output_files
 #cat /Users/tejashree/Documents/Projects/cnv/annot/gimap_exon.bed | cut -f1 | uniq -c will show the distribution of exons on each chromosome
 #gimap genes are present on 7 different chromosomes! #2,4,5,6,7,8,9
 #The ref genome has 55 genes (unique LOCs annotated as GTPase IMAP family member)
+#In order to get to the phylogeny of GIMAP genes we need to first get their sequences
+# I get the LOCs mapped to each GIMAP gene from ref_annot
+gimap_genes <- dplyr::filter(ref_annot, grepl('GTPase IMAP family member', annot)) %>% select('LOC') %>% unique()
+oyster_genes <- read.table("/Users/tejashree/Documents/Projects/cnv/annot/Oyster_gene.bed",stringsAsFactors = FALSE)
+colnames(oyster_genes)  <- c("CHROM", "POS","end", "LOC")
+gimap_genes_bed <- semi_join(oyster_genes,gimap_genes)
+gimap_genes_bed2 <- semi_join(oyster_genes,gimap_genes) 
+gimap_genes_bed2$len <- gimap_genes_bed2$end - gimap_genes_bed2$POS
+gimap_genes_bed %>% write.table("/Users/tejashree/Documents/Projects/cnv/scripts/output_files/oyster_cnv/gimap_genes.bed", append = FALSE, sep = "\t",quote = FALSE,
+            row.names = F, col.names = FALSE)
+#scp file to bluewaves tejashree/oyster_cnv/ and used bedtools to get fasta gimap_genes.fa 
+#
+
+## pulling out dups mapped to histone genes
+dplyr::filter(dup_annot, grepl('histone', annot)) %>% left_join(cn_gtypes_long,by="ID") %>% View()
+
 
 ###Vst calculations###
 # Vpopx is the CN variance for each respective population

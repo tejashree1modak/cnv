@@ -336,12 +336,51 @@ cn_chr10_hmap + geom_vline(xintercept = (32650044/2), color = "red", size=0.3)
 #### Filteration #####
 #Get dups common to all populations since they are likely artifacts 
 common_dups <- pop_num_alts_present %>% group_by(ID) %>% tally(sort = TRUE) %>% head(961) %>% select(ID)
+#Get dups common to all populations but present in all samples of each population
+sample_num_alts <- gtypes_long %>% filter(!is.na(num_alts)) %>% filter(num_alts >0)
+#counting the number of total samples
+apply(gtypes_long, 2, function(x) length(unique(x))) #there are 90 samples in total
+#   ID   sample    gtype      pop num_alts 
+#13387       90        4       16        4
+sample_num_alts %>% group_by(ID) %>% summarize(count=n()) %>% View() #No dups with coun=90, 44 dups with count=89 
 
 ##Repeat Masker##
-#Repeat locations as shown by repeat masker out file
+#Repeatmasker output was obtained from the ftp server where C.virginica genome files are at
+#ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/002/022/765/GCA_002022765.4_C_virginica-3.0
+#The file is GCA_002022765.4_C_virginica-3.0_rm.out.gz
+#Repeat locations in the C.vir genome as shown by repeat masker out file
+#only start and stop pulled out of output
 repeats <- read.table("/Users/tejashree/Documents/Projects/cnv/genome/repeat_masker/Cvir_genome_repeats.txt", 
                       sep="\t" , header = TRUE, skip = 1, stringsAsFactors = FALSE)
 repeats$len <- repeats$end - repeats$begin
+#A bedfile of repeats was made (Cvir_genome_repeats.bed)
+#The repeat output has different chromosome numbers so the file was edited to match names (eg. NC_035789.1) (Cvir_genome_repeats_mod.bed)
+#To get overlaps of dups and repeats bedtools.sh was used.
+#Output file was cleaned up to remove CHROM column that was present twice 
+#(since I used -wo tag for bedtools intersect it gives location of both dup and repeat so CHROM appeared twice in the output)
+#Due to presence of overlapping repeats, bedtools intersect was rerun with merged repeats.  
+# dup_repeat_overlap <- read.table("/Users/tejashree/Documents/Projects/cnv/genome/repeat_masker/dup_repeat_overlap_len_mod.bed", 
+#                       sep="\t" , stringsAsFactors = FALSE)
+# colnames(dup_repeat_overlap) <- c("CHROM", "POS","end","ID","R_POS","R_end","R_ID","l")
+dup_repeat_overlap <- read.table("/Users/tejashree/Documents/Projects/cnv/genome/repeat_masker/dup_repeat_merged_overlap_mod.bed", 
+                                 sep="\t" , stringsAsFactors = FALSE)
+colnames(dup_repeat_overlap) <- c("CHROM", "POS","end","ID","R_POS","R_end","R_ID","l")
+#Number of repeats mapped to each duplicate
+dup_repeat_overlap %>% select("ID","l") %>% group_by(ID) %>% tally() %>% View()
+#Total len of repeats included in dups
+overlap_total_len <- dup_repeat_overlap %>% select("ID","l") %>% group_by(ID) %>% summarise(sum(l))
+colnames(overlap_total_len) <- c("ID","total_len")
+#tried to plot but too many entries for a simple plot 
+# overlap_total_len%>% ggplot(aes(x=ID, y=total_len)) + geom_col(fill='darkblue') + ylab(label = "Total length of repeats in dups") +
+#   theme(axis.text.x = element_text(angle = 90, hjust = 1))
+#Formatted data to pull out only dups and join repeat len by "," to get see in a gimpse but too many entries joined so not very readable
+aggregate(l~ID,data=dup_repeat_overlap,paste,collapse=",") %>% View()
+#Get % of dup len covered by repeats for each dup that overlaps with repeats
+percent_overlap <- oysterdup3 %>% select(ID,length) %>% left_join(overlap_total_len,by = 'ID') %>% na.omit() 
+percent_overlap$percent <- (percent_overlap$total_len/percent_overlap$length)*100
+#dups with <10% repeat coverage
+percent_overlap %>% filter(percent < 10) %>% nrow() #5052 so I filtered out only 1778 dups
+
 
 ###### ANALYSIS POST ANNOTATION #######
 # Annotating dups 

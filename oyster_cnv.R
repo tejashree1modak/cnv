@@ -342,7 +342,13 @@ sample_num_alts <- gtypes_long %>% filter(!is.na(num_alts)) %>% filter(num_alts 
 apply(gtypes_long, 2, function(x) length(unique(x))) #there are 90 samples in total
 #   ID   sample    gtype      pop num_alts 
 #13387       90        4       16        4
-sample_num_alts %>% group_by(ID) %>% summarize(count=n()) %>% View() #No dups with coun=90, 44 dups with count=89 
+sample_num_alts %>% group_by(ID) %>% summarize(count=n()) %>% View() #No dups with count=90, 44 dups with count=89 
+#to verify that there are 961 dups present in all populations
+pop_num_alts_present %>% group_by(ID) %>% summarize(count=n()) %>% View()
+#Criteria for filteration of common dups: 
+#Out of the 961 dups that are present in all populations how many are present in >90% samples (i.e. in 81 samples) 
+common_filter_dups <- 
+  semi_join(sample_num_alts,common_dups, by="ID") %>% group_by(ID) %>% summarize(count=n()) %>% filter(count > 81) %>% select("ID")#298 
 
 ##Repeat Masker##
 #Repeatmasker output was obtained from the ftp server where C.virginica genome files are at
@@ -379,7 +385,21 @@ aggregate(l~ID,data=dup_repeat_overlap,paste,collapse=",") %>% View()
 percent_overlap <- oysterdup3 %>% select(ID,length) %>% left_join(overlap_total_len,by = 'ID') %>% na.omit() 
 percent_overlap$percent <- (percent_overlap$total_len/percent_overlap$length)*100
 #dups with <10% repeat coverage
-percent_overlap %>% filter(percent < 10) %>% nrow() #5052 so I filtered out only 1778 dups
+percent_overlap %>% filter(percent > 10) %>% nrow() #filter out 1778 dups
+repeat_filter_dups <- percent_overlap %>% filter(percent > 10) %>% select("ID")
+
+#There are 28 dups present in both common_filter_dups and repeat_filter_dups 
+anti_join(common_filter_dups,repeat_filter_dups) %>% nrow()
+#Combining list of dups to be filtered because they are shared among >90% samples or have high repeat coverage.
+#Also removing dups present in both common_filter_dups and repeat_filter_dups using distinct()
+filter_dups <- rbind(common_filter_dups, repeat_filter_dups) %>% distinct() #2048
+# Remove these dups from dups bedfile.
+cvir_dup_bed <- oysterdup %>% select(V1:V4)
+colnames(cvir_dup_bed) <- c("CHROM","start","stop","ID")
+anti_join(cvir_dup_bed,filter_dups) %>% group_by(ID) %>% summarize(count=n()) %>% nrow() #11339 
+anti_join(cvir_dup_bed,filter_dups) %>%
+write.table("/Users/tejashree/Documents/Projects/cnv/scripts/output_files/oyster_cnv/cvir_filtered_dups.bed", append = FALSE, sep = "\t",quote = FALSE,
+            row.names = F, col.names = FALSE)
 
 
 ###### ANALYSIS POST ANNOTATION #######

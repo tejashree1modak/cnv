@@ -205,6 +205,7 @@ pop_alts_per_chrom %>% filter(CHROM=='NC_035789.1') %>% ggplot(aes(x=pop, y=num_
   geom_bar(stat = "identity", fill='dark gray')+ ggtitle("Duplication freq per population on chr10") +
   xlab("Populations") + ylab("Duplication frequency")
 
+### Upset plot of duplications in populations ###
 # get a de-duplicated list of locus id's
 ids <- unique(pop_num_alts_present$ID)
 
@@ -225,7 +226,6 @@ head(binaries)
 library(UpSetR)
 upset(binaries, nsets = length(pops), main.bar.color = "SteelBlue", sets.bar.color = "DarkCyan", 
       sets.x.label = "Number duplicate loci", text.scale = c(rep(1.4, 5), 2), order.by = "freq")
-
 #The bars on the bottom left show total number of duplicate loci for that population
 #The bars at the top show the count of the intersections denoted in the dot matrix below them.
 #So for columns in the matrix with only 1 dot, the bar above it shows the count of unique 
@@ -235,7 +235,7 @@ upset(binaries, nsets = length(pops), main.bar.color = "SteelBlue", sets.bar.col
 #(intersecting sections of a Venn diagram).
 
 ##Getting the genotype and copy number for all pop
-#funtion to pull out copy num from a col in the vcf for a sample
+#function to pull out copy num from a col in the vcf for a sample
 getcn <- function(bedout_col){
   str_split( bedout_col, ':') %>% map_chr(8)
 }
@@ -400,6 +400,78 @@ anti_join(cvir_dup_bed,filter_dups) %>% group_by(ID) %>% summarize(count=n()) %>
 anti_join(cvir_dup_bed,filter_dups) %>%
 write.table("/Users/tejashree/Documents/Projects/cnv/scripts/output_files/oyster_cnv/cvir_filtered_dups.bed", append = FALSE, sep = "\t",quote = FALSE,
             row.names = F, col.names = FALSE)
+
+##Repeat analysis post filteration##
+#Filter original datasets for further analysis:  oysterdup3
+oysterdup3_fil <- anti_join(oysterdup3, filter_dups)
+pop_num_alts_present_fil <- anti_join(pop_num_alts_present,filter_dups)
+#Count if number of dups is the same
+length(unique(pop_num_alts_present_fil[["ID"]])) #11339
+#Verify number of dups present in all pops
+#anti_join(common_dups,common_filter_dups) %>% anti_join(repeat_filter_dups) %>% nrow() 
+#both common and repeat filter criteria eliminate 353 dups from 961 that were common in all pops
+pop_num_alts_present_fil %>% group_by(ID) %>% summarize(count=n()) %>% filter(count==16) %>% nrow() #608
+## Upset plot of duplications in populations POST FILTERATION ##
+    # get a de-duplicated list of locus id's
+ids <- unique(pop_num_alts_present_fil$ID)
+# for each id, get a binary indicator of whether it is in a pop and bind to one dataframe
+pops <- unique(pop_num_alts_present_fil$pop)
+binaries <- pops %>% 
+  map_dfc(~ ifelse(ids %in% filter(pop_num_alts_present_fil, pop == .x)$ID, 1, 0) %>% 
+            as.data.frame) # UpSetR doesn't like tibbles
+# set column names
+names(binaries) <- pops
+# have a look at the data
+head(binaries)  
+# plot the sets with UpSetR
+library(UpSetR)
+upset(binaries, nsets = length(pops), main.bar.color = "SteelBlue", sets.bar.color = "DarkCyan", 
+      sets.x.label = "Number duplicate loci", text.scale = c(rep(1.4, 5), 2), order.by = "freq")
+
+## Frequency of duplications per chromosome POST FILTERATION ##
+gtypes_pos_fil <- map_dfr(select(oysterdup3_fil,CL_1:UMFS_6),getg)
+gtypes_pos_fil$POS <- oysterdup3_fil$POS
+gtypes_pos_long_fil <- gather(gtypes_pos_fil,key=sample,value=gtype,-POS)
+gtypes_pos_long_fil$pop <- str_split(gtypes_pos_long_fil$sample,'_') %>% map(1) %>% as.character()
+gtypes_pos_long_fil$pop <- as.vector(gtypes_pos_long_fil$pop)
+gtypes_pos_long_fil$num_alts <- str_split(gtypes_pos_long_fil$gtype,'/') %>% 
+  map(as.integer) %>% 
+  map_int(sum)
+#adding dups in all individuals of same pop to give pop count
+pop_num_pos_alts_fil <- gtypes_pos_long_fil %>% filter(!is.na(num_alts)) %>%
+  group_by(pop,POS) %>%
+  summarize(num_alts = sum(num_alts))
+pop_num_pos_alts_present_fil <- filter(pop_num_pos_alts_fil,num_alts >0)
+chrom_pos_fil <- oysterdup3_fil %>% select(CHROM, POS) 
+pop_num_pos_alts_present_chrom_fil <- left_join(pop_num_pos_alts_present_fil, chrom_pos, by = "POS")
+pop_alts_per_chrom_fil <- pop_num_pos_alts_present_chrom_fil %>% group_by(pop,CHROM) %>% 
+  summarize(num_alts = sum(num_alts))
+ggplot(pop_alts_per_chrom_fil, aes(x=CHROM,y=num_alts, color=pop)) + geom_bar(stat = "identity", fill="white") + 
+  labs(x="Chromosome Number", y="Frequency of CNVs", title ="Post filteration")
+# normalized by chromosome size
+chrom_len <- data.frame(CHROM=c("NC_035780.1","NC_035781.1","NC_035782.1","NC_035783.1","NC_035784.1","NC_035785.1",
+                                "NC_035786.1", "NC_035787.1","NC_035788.1","NC_035789.1"), 
+                        start=c(1,1,1,1,1,1,1,1,1,1), 
+                        end=c(65668440,61752955,77061148,59691872,98698416,51258098,57830854,75944018,104168038,32650045))
+chrom_len$len <- chrom_len$end - chrom_len$start
+pop_alts_per_chrom_len_fil <- left_join(pop_alts_per_chrom_fil, chrom_len, by = "CHROM")
+ggplot(pop_alts_per_chrom_len_fil, aes(x=CHROM,y=(num_alts/len), color=pop)) + geom_bar(stat = "identity", fill="white") + 
+  labs(x="Chromosome Number", y="Frequency of CNVs",title = "Post filteration")
+
+##Copy number analysis POST FILTERATION ##
+cn_gtypes_long_fil <- anti_join(cn_gtypes_long, filter_dups)
+#cn stats POST FILTERATION # 
+min(cn_gtypes_long_fil[,5], na.rm=T) #-1
+max(cn_gtypes_long_fil[,5], na.rm=T) #20025
+hist(cn_gtypes_long_fil$cn)
+#cn on chr1 POST FILTERATION #
+cn_gtypes_long_chr1_fil <- filter(cn_gtypes_long_fil, CHROM == "NC_035780.1") %>% select(POS, sample, cn) 
+cn_gtypes_long_chr1_fil$cn <- as.numeric(as.character(cn_gtypes_long_chr1_fil$cn))
+filter(cn_gtypes_long_chr1_fil, cn > 500) %>% select(cn)%>% hist()
+cn_chr1_hmap_fil <- ggplot(data = cn_gtypes_long_chr1_fil, mapping = aes(x = POS,y = sample,color = log(cn))) + 
+  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 1") +scale_color_viridis_c(direction = -1, na.value = "#f6f7a4",limits = c(0, 10))
+# cn_chr1_hmap + geom_point(data=cn_gtypes_long_chr1, aes(x=65668439/2, y=1), col="red",pch=24, cex = 3)
+cn_chr1_hmap_fil + geom_vline(xintercept = (65668439/2), color = "red", size=0.3)
 
 
 ###### ANALYSIS POST ANNOTATION #######

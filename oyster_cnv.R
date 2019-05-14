@@ -460,6 +460,8 @@ ggplot(pop_alts_per_chrom_len_fil, aes(x=CHROM,y=(num_alts/len), color=pop)) + g
 
 ##Copy number analysis POST FILTERATION ##
 cn_gtypes_long_fil <- anti_join(cn_gtypes_long, filter_dups)
+#what does copy nymber look like for the filtered dups themselves 
+semi_join(cn_gtypes_long, filter_dups) %>% View()
 #check number of dups to verify correct filteration
 length(unique(cn_gtypes_long_fil[["ID"]])) #11339
 #cn stats POST FILTERATION unchanged after filteration# 
@@ -666,7 +668,9 @@ gimap_genes_bed2$len <- gimap_genes_bed2$end - gimap_genes_bed2$POS
 gimap_genes_bed %>% write.table("/Users/tejashree/Documents/Projects/cnv/scripts/output_files/oyster_cnv/gimap_genes.bed", append = FALSE, sep = "\t",quote = FALSE,
             row.names = F, col.names = FALSE)
 #scp file to bluewaves tejashree/oyster_cnv/ and used bedtools to get fasta gimap_genes.fa 
-#
+## POST FILTERATION## 
+# 2 dups mapped to gimap need to be filtered due to filteration criteria. 
+#DUP00223590, DUP01190157
 
 ## pulling out dups mapped to histone genes
 dplyr::filter(dup_annot, grepl('histone', annot)) %>% left_join(cn_gtypes_long,by="ID") %>% View()

@@ -460,19 +460,73 @@ ggplot(pop_alts_per_chrom_len_fil, aes(x=CHROM,y=(num_alts/len), color=pop)) + g
 
 ##Copy number analysis POST FILTERATION ##
 cn_gtypes_long_fil <- anti_join(cn_gtypes_long, filter_dups)
-#cn stats POST FILTERATION # 
+#check number of dups to verify correct filteration
+length(unique(cn_gtypes_long_fil[["ID"]])) #11339
+#cn stats POST FILTERATION unchanged after filteration# 
 min(cn_gtypes_long_fil[,5], na.rm=T) #-1
 max(cn_gtypes_long_fil[,5], na.rm=T) #20025
 hist(cn_gtypes_long_fil$cn)
 #cn on chr1 POST FILTERATION #
 cn_gtypes_long_chr1_fil <- filter(cn_gtypes_long_fil, CHROM == "NC_035780.1") %>% select(POS, sample, cn) 
 cn_gtypes_long_chr1_fil$cn <- as.numeric(as.character(cn_gtypes_long_chr1_fil$cn))
-filter(cn_gtypes_long_chr1_fil, cn > 500) %>% select(cn)%>% hist()
 cn_chr1_hmap_fil <- ggplot(data = cn_gtypes_long_chr1_fil, mapping = aes(x = POS,y = sample,color = log(cn))) + 
   geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 1") +scale_color_viridis_c(direction = -1, na.value = "#f6f7a4",limits = c(0, 10))
 # cn_chr1_hmap + geom_point(data=cn_gtypes_long_chr1, aes(x=65668439/2, y=1), col="red",pch=24, cex = 3)
 cn_chr1_hmap_fil + geom_vline(xintercept = (65668439/2), color = "red", size=0.3)
 
+cn_gtypes_long_chr2_fil <- filter(cn_gtypes_long_fil, CHROM == "NC_035781.1") %>% select(POS, sample, cn) 
+cn_gtypes_long_chr2_fil$cn <- as.numeric(as.character(cn_gtypes_long_chr2_fil$cn))
+cn_chr2_hmap_fil <- ggplot(data = cn_gtypes_long_chr2_fil, mapping = aes(x = POS,y = sample,color = log(cn))) + 
+  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 2") +scale_color_viridis_c(direction = -1, na.value = "#f6f7a4",limits = c(0, 10))
+cn_chr2_hmap_fil + geom_vline(xintercept = (65668439/2), color = "red", size=0.3)
+
+cn_gtypes_long_chr3_fil <- filter(cn_gtypes_long_fil, CHROM == "NC_035782.1") %>% select(POS, sample, cn) 
+cn_gtypes_long_chr3_fil$cn <- as.numeric(as.character(cn_gtypes_long_chr3_fil$cn))
+cn_chr3_hmap_fil <- ggplot(data = cn_gtypes_long_chr3_fil, mapping = aes(x = POS,y = sample,color = log(cn))) + 
+  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 3") +scale_color_viridis_c(direction = -1, na.value = "#f6f7a4",limits = c(0, 10))
+cn_chr3_hmap_fil + geom_vline(xintercept = (65668439/2), color = "red", size=0.3)
+
+cn_gtypes_long_chr4_fil <- filter(cn_gtypes_long_fil, CHROM == "NC_035783.1") %>% select(POS, sample, cn) 
+cn_gtypes_long_chr4_fil$cn <- as.numeric(as.character(cn_gtypes_long_chr4_fil$cn))
+cn_chr4_hmap_fil <- ggplot(data = cn_gtypes_long_chr4_fil, mapping = aes(x = POS,y = sample,color = log(cn))) + 
+  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 4") +scale_color_viridis_c(direction = -1, na.value = "#f6f7a4",limits = c(0, 10))
+cn_chr4_hmap_fil + geom_vline(xintercept = (65668439/2), color = "red", size=0.3)
+
+cn_gtypes_long_chr5_fil <- filter(cn_gtypes_long_fil, CHROM == "NC_035784.1") %>% select(POS, sample, cn) 
+cn_gtypes_long_chr5_fil$cn <- as.numeric(as.character(cn_gtypes_long_chr5_fil$cn))
+cn_chr5_hmap_fil <- ggplot(data = cn_gtypes_long_chr5_fil, mapping = aes(x = POS,y = sample,color = log(cn))) + 
+  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 5") +scale_color_viridis_c(direction = -1, na.value = "#f6f7a4",limits = c(0, 10))
+cn_chr5_hmap_fil + geom_vline(xintercept = (65668439/2), color = "red", size=0.3)
+
+cn_gtypes_long_chr6_fil <- filter(cn_gtypes_long_fil, CHROM == "NC_035785.1") %>% select(POS, sample, cn) 
+cn_gtypes_long_chr6_fil$cn <- as.numeric(as.character(cn_gtypes_long_chr6_fil$cn))
+cn_chr6_hmap_fil <- ggplot(data = cn_gtypes_long_chr6_fil, mapping = aes(x = POS,y = sample,color = log(cn))) + 
+  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 6") +scale_color_viridis_c(direction = -1, na.value = "#f6f7a4",limits = c(0, 10))
+cn_chr6_hmap_fil + geom_vline(xintercept = (65668439/2), color = "red", size=0.3)
+
+cn_gtypes_long_chr7_fil <- filter(cn_gtypes_long_fil, CHROM == "NC_035786.1") %>% select(POS, sample, cn) 
+cn_gtypes_long_chr7_fil$cn <- as.numeric(as.character(cn_gtypes_long_chr7_fil$cn))
+cn_chr7_hmap_fil <- ggplot(data = cn_gtypes_long_chr7_fil, mapping = aes(x = POS,y = sample,color = log(cn))) + 
+  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 7") +scale_color_viridis_c(direction = -1, na.value = "#f6f7a4",limits = c(0, 10))
+cn_chr7_hmap_fil + geom_vline(xintercept = (65668439/2), color = "red", size=0.3)
+
+cn_gtypes_long_chr8_fil <- filter(cn_gtypes_long_fil, CHROM == "NC_035787.1") %>% select(POS, sample, cn) 
+cn_gtypes_long_chr8_fil$cn <- as.numeric(as.character(cn_gtypes_long_chr8_fil$cn))
+cn_chr8_hmap_fil <- ggplot(data = cn_gtypes_long_chr8_fil, mapping = aes(x = POS,y = sample,color = log(cn))) + 
+  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 8") +scale_color_viridis_c(direction = -1, na.value = "#f6f7a4",limits = c(0, 10))
+cn_chr8_hmap_fil + geom_vline(xintercept = (65668439/2), color = "red", size=0.3)
+
+cn_gtypes_long_chr9_fil <- filter(cn_gtypes_long_fil, CHROM == "NC_035788.1") %>% select(POS, sample, cn) 
+cn_gtypes_long_chr9_fil$cn <- as.numeric(as.character(cn_gtypes_long_chr9_fil$cn))
+cn_chr9_hmap_fil <- ggplot(data = cn_gtypes_long_chr9_fil, mapping = aes(x = POS,y = sample,color = log(cn))) + 
+  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 9") +scale_color_viridis_c(direction = -1, na.value = "#f6f7a4",limits = c(0, 10))
+cn_chr9_hmap_fil + geom_vline(xintercept = (65668439/2), color = "red", size=0.3)
+
+cn_gtypes_long_chr10_fil <- filter(cn_gtypes_long_fil, CHROM == "NC_035789.1") %>% select(POS, sample, cn) 
+cn_gtypes_long_chr10_fil$cn <- as.numeric(as.character(cn_gtypes_long_chr10_fil$cn))
+cn_chr10_hmap_fil <- ggplot(data = cn_gtypes_long_chr10_fil, mapping = aes(x = POS,y = sample,color = log(cn))) + 
+  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 10") +scale_color_viridis_c(direction = -1, na.value = "#f6f7a4",limits = c(0, 10))
+cn_chr10_hmap_fil + geom_vline(xintercept = (65668439/2), color = "red", size=0.3)
 
 ###### ANALYSIS POST ANNOTATION #######
 # Annotating dups 

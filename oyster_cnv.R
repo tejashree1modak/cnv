@@ -12,6 +12,17 @@ library(ggplot2)
 #library(dplyr)
 library(scales)
 
+#Labels, colors and shapes for consistent plotting 
+labels = c("CL"="LA-HSCL","CLP"="CB-LSCP","CS"="DB-HSCS","DEBY"="CB-DEBY","HC"="DB-LSHC",
+           "HCVA"="CB-HSHC","HG"="DB-NEHG","HI"="ME-HSHI","LM"="TX-HSLM","LOLA"="CB-LOLA",
+           "NEH"="DB-NEHD","NG"="DB-NEHS","OBOYS2"="LA-OBOY","SL"="LA-LSSL","SM"="ME-LSSM","UMFS"="ME-UMFS")
+values = c("CL"="#a63603","CLP"="#a6d854","CS"="#08519c","DEBY"="#006d2c","HC"="skyblue",
+           "HCVA"="#31a354","HG"="#6a51a3","HI"="#fbb4b9","LM"="black","LOLA"="#bae4b3",
+           "NEH"="#9e9ac8","NG"="#dadaeb","OBOYS2"="#fd8d3c","SL"="#fdae6b","SM"="#7a0177","UMFS"="#f768a1")
+shapes = c("CL"=17,"CLP"=17,"CS"=17,"DEBY"=16,"HC"=17,
+           "HCVA"=17,"HG"=13,"HI"=17,"LM"=17,"LOLA"=16,
+           "NEH"=16,"NG"=13,"OBOYS2"=16,"SL"=17,"SM"=17,"UMFS"=16)
+
 #gene data - sizes but not more info
 oysterdup <- read.table("/Users/tejashree/Documents/Projects/cnv/delly/oysterduplicate_sort.bed",stringsAsFactors = FALSE)
 oysterdup$l <- oysterdup$V3 - oysterdup$V2 
@@ -447,7 +458,7 @@ pop_num_pos_alts_present_chrom_fil <- left_join(pop_num_pos_alts_present_fil, ch
 pop_alts_per_chrom_fil <- pop_num_pos_alts_present_chrom_fil %>% group_by(pop,CHROM) %>% 
   summarize(num_alts = sum(num_alts))
 ggplot(pop_alts_per_chrom_fil, aes(x=CHROM,y=num_alts, color=pop)) + geom_bar(stat = "identity", fill="white") + 
-  labs(x="Chromosome Number", y="Frequency of CNVs", title ="Post filteration")
+  labs(x="Chromosome Number", y="Frequency of CNVs", title ="Post filteration") + scale_color_manual(values=values,labels=labels)
 # normalized by chromosome size
 chrom_len <- data.frame(CHROM=c("NC_035780.1","NC_035781.1","NC_035782.1","NC_035783.1","NC_035784.1","NC_035785.1",
                                 "NC_035786.1", "NC_035787.1","NC_035788.1","NC_035789.1"), 
@@ -456,7 +467,7 @@ chrom_len <- data.frame(CHROM=c("NC_035780.1","NC_035781.1","NC_035782.1","NC_03
 chrom_len$len <- chrom_len$end - chrom_len$start
 pop_alts_per_chrom_len_fil <- left_join(pop_alts_per_chrom_fil, chrom_len, by = "CHROM")
 ggplot(pop_alts_per_chrom_len_fil, aes(x=CHROM,y=(num_alts/len), color=pop)) + geom_bar(stat = "identity", fill="white") + 
-  labs(x="Chromosome Number", y="Frequency of CNVs",title = "Post filteration")
+  labs(x="Chromosome Number", y="Frequency of CNVs",title = "Post filteration")+ scale_color_manual(values=values,labels=labels)
 
 ##Copy number analysis POST FILTERATION ##
 cn_gtypes_long_fil <- anti_join(cn_gtypes_long, filter_dups)
@@ -645,6 +656,19 @@ left_join(gimap_sub,cn) %>% ggplot(aes(pop,cn)) + geom_col()
 #Inter and intra population copy number variation
 left_join(gimap_sub,cn) %>% ggplot(aes(cn,pop, color =pop)) + facet_wrap(~ID) + geom_jitter()  
 left_join(gimap_sub,cn) %>% ggplot(aes(cn,ID, color =ID)) + facet_wrap(~pop) + geom_jitter() 
+labels = c("CL"="LA-HSCL","CLP"="CB-LSCP","CS"="DB-HSCS","DEBY"="CB-DEBY","HC"="DB-LSHC",
+           "HCVA"="CB-HSHC","HG"="DB-NEHG","HI"="ME-HSHI","LM"="TX-HSLM","LOLA"="CB-LOLA",
+           "NEH"="DB-NEHD","NG"="DB-NEHS","OBOYS2"="LA-OBOY","SL"="LA-LSSL","SM"="ME-LSSM","UMFS"="ME-UMFS")
+values = c("CL"="#a63603","CLP"="#a6d854","CS"="#08519c","DEBY"="#006d2c","HC"="skyblue",
+           "HCVA"="#31a354","HG"="#6a51a3","HI"="#fbb4b9","LM"="black","LOLA"="#bae4b3",
+           "NEH"="#9e9ac8","NG"="#dadaeb","OBOYS2"="#fd8d3c","SL"="#fdae6b","SM"="#7a0177","UMFS"="#f768a1")
+shapes = c("CL"=17,"CLP"=17,"CS"=17,"DEBY"=16,"HC"=17,
+           "HCVA"=17,"HG"=13,"HI"=17,"LM"=17,"LOLA"=16,
+           "NEH"=16,"NG"=13,"OBOYS2"=16,"SL"=17,"SM"=17,"UMFS"=16)
+#Replotting for consistent pop names,colors and shapes.
+left_join(gimap_sub,cn) %>% ggplot(aes(cn,pop, color =pop, shape=pop, label=pop)) + facet_wrap(~ID) + geom_jitter() + 
+  scale_color_manual(values=values,labels=labels) + 
+  scale_shape_manual(values=shapes,labels=labels) + scale_y_discrete(labels=labels)
 #Getting the sequences of all DUP_IDs mapped as GIMAP
 #Getting ready a bedfile for bedtools to get the fasta
 left_join(gimap_ID,oysterdup3) %>% select(CHROM, POS, end, ID) %>% 

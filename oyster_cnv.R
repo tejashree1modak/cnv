@@ -456,7 +456,10 @@ pop_num_pos_alts_present_fil <- filter(pop_num_pos_alts_fil,num_alts >0)
 chrom_pos_fil <- oysterdup3_fil %>% select(CHROM, POS) 
 pop_num_pos_alts_present_chrom_fil <- left_join(pop_num_pos_alts_present_fil, chrom_pos, by = "POS")
 pop_alts_per_chrom_fil <- pop_num_pos_alts_present_chrom_fil %>% group_by(pop,CHROM) %>% 
-  summarize(num_alts = sum(num_alts))
+  summarize(num_alts = sum(num_alts)) 
+#defining order of pop levels for plotting 
+pop_alts_per_chrom_fil$pop <- factor (as.character(pop_alts_per_chrom_fil$pop), 
+                                  levels=c("HI","SM","CS","HC","HCVA","CLP","CL","SL","LM","UMFS","NEH","HG","NG","DEBY","LOLA","OBOYS2"))
 ggplot(pop_alts_per_chrom_fil, aes(x=CHROM,y=num_alts, color=pop)) + geom_bar(stat = "identity", fill="white") + 
   labs(x="Chromosome Number", y="Frequency of CNVs", title ="Post filteration") + scale_color_manual(values=values,labels=labels)
 # normalized by chromosome size
@@ -466,6 +469,8 @@ chrom_len <- data.frame(CHROM=c("NC_035780.1","NC_035781.1","NC_035782.1","NC_03
                         end=c(65668440,61752955,77061148,59691872,98698416,51258098,57830854,75944018,104168038,32650045))
 chrom_len$len <- chrom_len$end - chrom_len$start
 pop_alts_per_chrom_len_fil <- left_join(pop_alts_per_chrom_fil, chrom_len, by = "CHROM")
+pop_alts_per_chrom_len_fil$pop <- factor (as.character(pop_alts_per_chrom_len_fil$pop), 
+                                      levels=c("HI","SM","CS","HC","HCVA","CLP","CL","SL","LM","UMFS","NEH","HG","NG","DEBY","LOLA","OBOYS2"))
 ggplot(pop_alts_per_chrom_len_fil, aes(x=CHROM,y=(num_alts/len), color=pop)) + geom_bar(stat = "identity", fill="white") + 
   labs(x="Chromosome Number", y="Frequency of CNVs",title = "Post filteration")+ scale_color_manual(values=values,labels=labels)
 
@@ -479,6 +484,8 @@ length(unique(cn_gtypes_long_fil[["ID"]])) #11339
 min(cn_gtypes_long_fil[,5], na.rm=T) #-1
 max(cn_gtypes_long_fil[,5], na.rm=T) #20025
 hist(cn_gtypes_long_fil$cn)
+#change the sample names and order the levels 
+
 #cn on chr1 POST FILTERATION #
 cn_gtypes_long_chr1_fil <- filter(cn_gtypes_long_fil, CHROM == "NC_035780.1") %>% select(POS, sample, cn) 
 cn_gtypes_long_chr1_fil$cn <- as.numeric(as.character(cn_gtypes_long_chr1_fil$cn))

@@ -16,6 +16,22 @@ library(scales)
 labels = c("CL"="LA-HSCL","CLP"="CB-LSCP","CS"="DB-HSCS","DEBY"="CB-DEBY","HC"="DB-LSHC",
            "HCVA"="CB-HSHC","HG"="DB-NEHG","HI"="ME-HSHI","LM"="TX-HSLM","LOLA"="CB-LOLA",
            "NEH"="DB-NEHD","NG"="DB-NEHS","OBOYS2"="LA-OBOY","SL"="LA-LSSL","SM"="ME-LSSM","UMFS"="ME-UMFS")
+sample_lables = c("CL_1"="LA-HSCL_1", "CL_2"="LA-HSCL_2","CL_3"="LA-HSCL_3","CL_4"="LA-HSCL_4","CL_5"="LA-HSCL_5","CL_6"="LA-HSCL_6",
+                  "CLP_1"="CB-LSCP_1","CLP_2"="CB-LSCP_2","CLP_3"="CB-LSCP_3","CLP_4"="CB-LSCP_4","CLP_5"="CB-LSCP_5","CLP_6"="CB-LSCP_6",
+                  "CS_1"="DB-HSCS_1","CS_2"="DB-HSCS_2","CS_3"="DB-HSCS_3","CS_5"="DB-HSCS_5","CS_6"="DB-HSCS_6","CS_7"="DB-HSCS_7",
+                  "DEBY_1"="CB-DEBY_1","DEBY_2"="CB-DEBY_2","DEBY_3"="CB-DEBY_3","DEBY_4"="CB-DEBY_4","DEBY_5"="CB-DEBY_5","DEBY_6"="CB-DEBY_6",
+                  "HC_1"="DB-LSHC_1","HC_3"="DB-LSHC_3","HC_4"="DB-LSHC_4","HC_5"="DB-LSHC_5","HC_6"="DB-LSHC_6","HC_7"="DB-LSHC_7",
+                  "HCVA_1"="CB-HSHC_1","HCVA_2"="CB-HSHC_2","HCVA_3"="CB-HSHC_3","HCVA_4"="CB-HSHC_4","HCVA_5"="CB-HSHC_5","HCVA_6"="CB-HSHC_6",
+                  "HG_HG0F2"="DB-NEHG_1",  "HG_HG2F1"="DB-NEHG_2","HG_HG2M5"="DB-NEHG_3",
+                  "HI_1"="ME-HSHI_1","HI_2"="ME-HSHI_2","HI_3"="ME-HSHI_3","HI_4"="ME-HSHI_4","HI_5"="ME-HSHI_5", "HI_6"="ME-HSHI_6",
+                  "LM_1_pool"="TX-HSLM_1", "LM_3"="TX-HSLM_3","LM_4"="TX-HSLM_4","LM_7"="TX-HSLM_7","LM_8"="TX-HSLM_8",
+                  "LOLA_1"="CB-LOLA_1","LOLA_2"="CB-LOLA_2","LOLA_3"="CB-LOLA_3","LOLA_4"="CB-LOLA_4","LOLA_5"="CB-LOLA_5","LOLA_6"="CB-LOLA_6",
+                  "NEH_1"="DB-NEHD_1","NEH_2"="DB-NEHD_2","NEH_3"="DB-NEHD_3","NEH_4"="DB-NEHD_4","NEH_5"="DB-NEHD_5","NEH_6"="DB-NEHD_6",
+                  "NG_NH0H4"="DB-NEHS_1", "NG_NH2F6"="DB-NEHS_2","NG_NH2F8"="DB-NEHS_3","NG_NH2M1"="DB-NEHS_4", 
+                   "OBOYS2_1"="LA-OBOY_1","OBOYS2_2"="LA-OBOY_2","OBOYS2_3"="LA-OBOY_3","OBOYS2_4"="LA-OBOY_4","OBOYS2_5"="LA-OBOY_5","OBOYS2_6"="LA-OBOY_6",
+                  "SL_1"="LA-LSSL_1", "SL_2"="LA-LSSL_2", "SL_3"="LA-LSSL_3", "SL_4"="LA-LSSL_4", "SL_5"="LA-LSSL_5","SL_6"="LA-LSSL_6",
+                  "SM_10"="ME-LSSM_1","SM_11"="ME-LSSM_2","SM_12"="ME-LSSM_3","SM_7"="ME-LSSM_4","SM_8"="ME-LSSM_5","SM_9"="ME-LSSM_6",
+                  "UMFS_1"="ME-UMFS_1","UMFS_2"="ME-UMFS_2","UMFS_3"="ME-UMFS_3","UMFS_4"="ME-UMFS_4","UMFS_5"="ME-UMFS_5","UMFS_6"="ME-UMFS_6")
 values = c("CL"="#a63603","CLP"="#a6d854","CS"="#08519c","DEBY"="#006d2c","HC"="skyblue",
            "HCVA"="#31a354","HG"="#6a51a3","HI"="#fbb4b9","LM"="black","LOLA"="#bae4b3",
            "NEH"="#9e9ac8","NG"="#dadaeb","OBOYS2"="#fd8d3c","SL"="#fdae6b","SM"="#7a0177","UMFS"="#f768a1")
@@ -411,6 +427,12 @@ anti_join(cvir_dup_bed,filter_dups) %>% group_by(ID) %>% summarize(count=n()) %>
 anti_join(cvir_dup_bed,filter_dups) %>%
 write.table("/Users/tejashree/Documents/Projects/cnv/scripts/output_files/oyster_cnv/cvir_filtered_dups.bed", append = FALSE, sep = "\t",quote = FALSE,
             row.names = F, col.names = FALSE)
+#Dups shared by all pops post filtration
+pop_shared_fil <- pop_num_alts_present_fil %>% group_by(ID) %>% tally(sort = TRUE) %>% head(608) %>% select(ID)
+semi_join(cvir_dup_bed, pop_shared_fil) %>% group_by(ID) %>% summarize(count=n()) %>% nrow()
+semi_join(cvir_dup_bed, pop_shared_fil) %>%
+  write.table("/Users/tejashree/Documents/Projects/cnv/scripts/output_files/oyster_cnv/cvir_filtered_fully_shared_dups.bed", append = FALSE, sep = "\t",quote = FALSE,
+              row.names = F, col.names = FALSE)
 
 ##Repeat analysis post filteration##
 #Filter original datasets for further analysis:  oysterdup3
@@ -489,10 +511,29 @@ hist(cn_gtypes_long_fil$cn)
 #cn on chr1 POST FILTERATION #
 cn_gtypes_long_chr1_fil <- filter(cn_gtypes_long_fil, CHROM == "NC_035780.1") %>% select(POS, sample, cn) 
 cn_gtypes_long_chr1_fil$cn <- as.numeric(as.character(cn_gtypes_long_chr1_fil$cn))
+#put in sample names as you want them to appear in the plot and in the order you want#
+cn_gtypes_long_chr1_fil$sample <- factor (as.character(cn_gtypes_long_chr1_fil$sample), 
+                                      levels=c("CL_1", "CL_2","CL_3","CL_4","CL_5","CL_6",
+                                               "CLP_1","CLP_2","CLP_3","CLP_4","CLP_5","CLP_6",
+                                               "CS_1","CS_2","CS_3","CS_5","CS_6","CS_7",
+                                               "DEBY_1","DEBY_2","DEBY_3","DEBY_4","DEBY_5","DEBY_6",
+                                               "HC_1","HC_3","HC_4","HC_5","HC_6","HC_7",
+                                               "HCVA_1","HCVA_2","HCVA_3","HCVA_4","HCVA_5","HCVA_6",
+                                               "HG_HG0F2","HG_HG2F1","HG_HG2M5",
+                                               "HI_1","HI_2","HI_3","HI_4","HI_5", "HI_6",
+                                               "LM_1_pool", "LM_3","LM_4","LM_7","LM_8",
+                                               "LOLA_1","LOLA_2","LOLA_3","LOLA_4","LOLA_5","LOLA_6",
+                                               "NEH_1","NEH_2","NEH_3","NEH_4","NEH_5","NEH_6",
+                                               "NG_NH0H4", "NG_NH2F6","NG_NH2F8","NG_NH2M1", 
+                                               "OBOYS2_1","OBOYS2_2","OBOYS2_3","OBOYS2_4","OBOYS2_5","OBOYS2_6",
+                                               "SL_1", "SL_2", "SL_3", "SL_4", "SL_5","SL_6",
+                                               "SM_10","SM_11","SM_12","SM_7","SM_8","SM_9",
+                                               "UMFS_1","UMFS_2","UMFS_3","UMFS_4","UMFS_5","UMFS_6"))
 cn_chr1_hmap_fil <- ggplot(data = cn_gtypes_long_chr1_fil, mapping = aes(x = POS,y = sample,color = log(cn))) + 
-  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 1") +scale_color_viridis_c(direction = -1, na.value = "#f6f7a4",limits = c(0, 10))
+  geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 1") +scale_color_viridis_c(direction = -1, na.value = "#f6f7a4",limits = c(0, 10)) #+ scale_fill_manual(labels=sample_lables)
+cn_chr1_hmap_fil
 # cn_chr1_hmap + geom_point(data=cn_gtypes_long_chr1, aes(x=65668439/2, y=1), col="red",pch=24, cex = 3)
-cn_chr1_hmap_fil + geom_vline(xintercept = (65668439/2), color = "red", size=0.3)
+cn_chr1_hmap_fil + geom_vline(xintercept = (65668439/2), color = "red", size=0.3) + scale_fill_manual(labels=sample_lables)
 
 cn_gtypes_long_chr2_fil <- filter(cn_gtypes_long_fil, CHROM == "NC_035781.1") %>% select(POS, sample, cn) 
 cn_gtypes_long_chr2_fil$cn <- as.numeric(as.character(cn_gtypes_long_chr2_fil$cn))

@@ -411,7 +411,7 @@ aggregate(l~ID,data=dup_repeat_overlap,paste,collapse=",") %>% View()
 #Get % of dup len covered by repeats for each dup that overlaps with repeats
 percent_overlap <- oysterdup3 %>% select(ID,length) %>% left_join(overlap_total_len,by = 'ID') %>% na.omit() 
 percent_overlap$percent <- (percent_overlap$total_len/percent_overlap$length)*100
-#dups with <10% repeat coverage
+#dups with >10% repeat coverage
 percent_overlap %>% filter(percent > 10) %>% nrow() #filter out 1778 dups
 repeat_filter_dups <- percent_overlap %>% filter(percent > 10) %>% select("ID")
 
@@ -746,6 +746,21 @@ gimap_genes_bed %>% write.table("/Users/tejashree/Documents/Projects/cnv/scripts
 
 ## pulling out dups mapped to histone genes
 dplyr::filter(dup_annot, grepl('histone', annot)) %>% left_join(cn_gtypes_long,by="ID") %>% View()
+
+
+### Duplications and expanded family mapping ###
+# Intersect between filtered dups and expanded families (as defined by CAFE analysis) were obtained using bedtools
+#Skipping those with 0 overlap
+dup_fam_overlap <- read.table("/Users/tejashree/Documents/Projects/cnv//scripts/output_files/oyster_cnv/dup_cv_expanded_unique_overlap_mod.bed", 
+                                 sep="\t" , stringsAsFactors = FALSE, skip = 7)
+colnames(dup_fam_overlap) <- c("CHROM", "POS","end","ID","F_POS","F_end","Sequence_name","l")
+#Number of repeats mapped to each duplicate
+dup_fam_overlap %>% select("ID","l") %>% group_by(ID) %>% tally() %>% View()
+#Cannot get the % overlap like I did with the repeats 
+#because there are multiple mapping of DUP IDs that cannot be aggregated because they map
+#with different XP IDs but same LOC IDs
+#get annotation for families that overlap with dups
+dup_fam_overlap %>% left_join(ref_annot_prot)%>% left_join(ref_annot)  %>% View()
 
 
 ###Vst calculations###

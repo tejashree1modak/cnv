@@ -754,14 +754,35 @@ dplyr::filter(dup_annot, grepl('histone', annot)) %>% left_join(cn_gtypes_long,b
 dup_fam_overlap <- read.table("/Users/tejashree/Documents/Projects/cnv//scripts/output_files/oyster_cnv/dup_cv_expanded_unique_overlap_mod.bed", 
                                  sep="\t" , stringsAsFactors = FALSE, skip = 7)
 colnames(dup_fam_overlap) <- c("CHROM", "POS","end","ID","F_POS","F_end","Sequence_name","l")
-#Number of repeats mapped to each duplicate
+#Number of dups mapped to expanded families
+#There are 545 duplications mapped to 669 LOCs and 1254 protein IDs annotated to 880 unique annotations (usually diff isoforms or transcript variants). 
+#So there are multiple mappings per duplication.
+#Out of these only 274 are annotated as something other than 'uncharacterized'
+dup_fam_overlap %>% select("ID","l") %>% group_by(ID) %>% tally() %>% nrow() #545
 dup_fam_overlap %>% select("ID","l") %>% group_by(ID) %>% tally() %>% View()
+dup_fam_overlap %>% select("Sequence_name") %>% group_by(Sequence_name) %>% tally() %>% nrow() #1254 
+dup_fam_overlap %>% select("Sequence_name") %>% group_by(Sequence_name) %>% tally() %>% View()
 #Cannot get the % overlap like I did with the repeats 
 #because there are multiple mapping of DUP IDs that cannot be aggregated because they map
 #with different XP IDs but same LOC IDs
 #get annotation for families that overlap with dups
-dup_fam_overlap %>% left_join(ref_annot_prot)%>% left_join(ref_annot)  %>% View()
-
+dup_fam_overlap %>% left_join(ref_annot_prot)%>% left_join(ref_annot) %>% View()
+dup_fam_overlap %>% left_join(ref_annot_prot)%>% left_join(ref_annot) %>% group_by(LOC) %>% 
+  filter(!is.na(LOC)) %>% tally() %>% nrow() #669
+dup_fam_overlap %>% left_join(ref_annot_prot)%>% left_join(ref_annot) %>% filter(!is.na(LOC)) %>% 
+  filter(!is.na(annot)) %>% 
+  filter(!grepl("uncharacterized",annot)) %>% group_by(LOC) %>% tally() %>% nrow() #274
+#Interesting finds: complement C1q-like protein 4,complement C1q tumor necrosis factor-related protein 3,complement C1q subcomponent subunit B-like
+#interferon-induced protein 44-like,interleukin-17 receptor D,
+#mucin-1-like, mucin-2-like, mucin-5AC-like and other isoforms, mucin-3A-like,mucin-17-like, natural resistance-associated macrophage protein 2
+# toll-like receptor 3, toll-like receptor 13, lectin BRA-3,hepatic lectin, fucolectin-4-like, scavenger receptor class F member 1-like, protease inhibitors-like,metalloproteinase inhibitor 3-like
+#nuclear apoptosis-inducing factor 1-like,death domain-containing protein CRADD-like
+dup_fam_overlap %>% left_join(ref_annot_prot)%>% left_join(ref_annot) %>% filter(!is.na(LOC)) %>% filter(!is.na(annot)) %>% 
+  filter(!grepl("uncharacterized",annot))%>% select("annot") %>% distinct() %>% View()
+#Why dont any dups map to GIMAP members with this analysis?
+left_join(ref_annot, ref_annot_prot) %>% filter(grepl('GTPase IMAP family member',annot)) %>% 
+  select('Sequence_name') %>% distinct() %>% semi_join(tmp2) #GIMAPs seem to be absent from the CAFE output both shared and unique!
+#Once this mystery is solved I can make a table of how many duplications mapped to these expanded genes of interest. 
 
 ###Vst calculations###
 # Vpopx is the CN variance for each respective population

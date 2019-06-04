@@ -68,7 +68,7 @@ oysterdup3$length <- oysterdup3$end - oysterdup3$POS #Smallest is 160bp and larg
 filter(oysterdup3, length > 1000) %>% nrow() #6551 So if we filter the dups based on len 
                                                     #and only keep >1kb we will only have 6551 instead of 13387
 
-#funtion to pull out number of each genotype from a col in the vcf for a sample
+#function to pull out number of each genotype from a col in the vcf for a sample
 gett <- function(bedout_col){
   sep_out <- str_split( bedout_col, ':') %>% as.data.frame()
   g <- sep_out[1,] %>% unname() %>% t()
@@ -460,6 +460,12 @@ head(binaries)
 library(UpSetR)
 upset(binaries, nsets = length(pops), main.bar.color = "SteelBlue", sets.bar.color = "DarkCyan", 
       sets.x.label = "Number duplicate loci", text.scale = c(rep(1.4, 5), 2), order.by = "freq")
+# Dups per population POST FILTRATION #
+pop_sum_fil <- as.data.frame(colSums(binaries))
+pop_sum_fil <- data.frame(pop = names(binaries),total_dups=colSums(binaries))
+pop_sum_fil$prop <- pop_sum_fil$total_dups/11339  #number of filtered dups are 11339 
+ggplot(pop_sum_fil, aes(x=pop,y=prop, color=pop)) + geom_bar(stat = "identity", fill="white") + 
+  labs(x="Populations", y="Proportion of total duplications per population", title ="Post filteration") + scale_color_manual(values=values,labels=labels)
 
 ## Frequency of duplications per chromosome POST FILTERATION ##
 gtypes_pos_fil <- map_dfr(select(oysterdup3_fil,CL_1:UMFS_6),getg)
@@ -507,7 +513,6 @@ min(cn_gtypes_long_fil[,5], na.rm=T) #-1
 max(cn_gtypes_long_fil[,5], na.rm=T) #20025
 hist(cn_gtypes_long_fil$cn)
 #change the sample names and order the levels 
-
 #cn on chr1 POST FILTERATION #
 cn_gtypes_long_chr1_fil <- filter(cn_gtypes_long_fil, CHROM == "NC_035780.1") %>% select(POS, sample, cn) 
 cn_gtypes_long_chr1_fil$cn <- as.numeric(as.character(cn_gtypes_long_chr1_fil$cn))
@@ -588,6 +593,16 @@ cn_gtypes_long_chr10_fil$cn <- as.numeric(as.character(cn_gtypes_long_chr10_fil$
 cn_chr10_hmap_fil <- ggplot(data = cn_gtypes_long_chr10_fil, mapping = aes(x = POS,y = sample,color = log(cn))) + 
   geom_point(aes(cex=cn/100)) + xlab(label = "Position")+ggtitle(label = "Chr 10") +scale_color_viridis_c(direction = -1, na.value = "#f6f7a4",limits = c(0, 10))
 cn_chr10_hmap_fil + geom_vline(xintercept = (65668439/2), color = "red", size=0.3)
+
+##Dups mapped to different genome features ###
+#Overlap between filtered dups and ALL genome features was obtained by making a BED file 
+#from the GFF3 file for all features (just pulling out the 4 relevant columns)
+# and using bedtools intersect to get overlaps with dups. 
+dup_genome_overlap <- read.table("/Users/tejashree/Documents/Projects/cnv//scripts/output_files/bluewaves/dup_genome_feat_overlap_mod.bed", 
+                              sep="\t" , stringsAsFactors = FALSE)
+colnames(dup_fam_overlap) <- c("CHROM", "POS","end","ID","G_POS","G_end","Feature_name","l")
+
+
 
 ###### ANALYSIS POST ANNOTATION #######
 # Annotating dups 
@@ -751,11 +766,11 @@ dplyr::filter(dup_annot, grepl('histone', annot)) %>% left_join(cn_gtypes_long,b
 ### Duplications and expanded family mapping ###
 # Intersect between filtered dups and expanded families (as defined by CAFE analysis) were obtained using bedtools
 #Skipping those with 0 overlap
-dup_fam_overlap <- read.table("/Users/tejashree/Documents/Projects/cnv//scripts/output_files/oyster_cnv/dup_cv_expanded_unique_overlap_mod.bed", 
+dup_fam_overlap <- read.table("/Users/tejashree/Documents/Projects/cnv//scripts/output_files/bluewaves/dup_cv_expanded_unique_overlap_mod.bed", 
                                  sep="\t" , stringsAsFactors = FALSE, skip = 7)
 colnames(dup_fam_overlap) <- c("CHROM", "POS","end","ID","F_POS","F_end","Sequence_name","l")
-#Number of dups mapped to expanded families
-#There are 545 duplications mapped to 669 LOCs and 1254 protein IDs annotated to 880 unique annotations (usually diff isoforms or transcript variants). 
+#Number of dups overlapping expanded families by at least 23bp
+#There are 545 duplications overlapping with 669 LOCs and 1254 protein IDs annotated to 880 unique annotations (usually diff isoforms or transcript variants). 
 #So there are multiple mappings per duplication.
 #Out of these only 274 are annotated as something other than 'uncharacterized'
 dup_fam_overlap %>% select("ID","l") %>% group_by(ID) %>% tally() %>% nrow() #545
@@ -782,7 +797,8 @@ dup_fam_overlap %>% left_join(ref_annot_prot)%>% left_join(ref_annot) %>% filter
 #Why dont any dups map to GIMAP members with this analysis?
 left_join(ref_annot, ref_annot_prot) %>% filter(grepl('GTPase IMAP family member',annot)) %>% 
   select('Sequence_name') %>% distinct() %>% semi_join(tmp2) #GIMAPs seem to be absent from the CAFE output both shared and unique!
-#Once this mystery is solved I can make a table of how many duplications mapped to these expanded genes of interest. 
+#Once this mystery is solved I can make a table of how many duplications mapped to these expanded genes of interest.
+#Also have to think about how much overlap should be used as a cutoff  
 
 ###Vst calculations###
 # Vpopx is the CN variance for each respective population

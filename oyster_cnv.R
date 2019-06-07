@@ -435,6 +435,22 @@ semi_join(cvir_dup_bed, pop_shared_fil) %>%
               row.names = F, col.names = FALSE)
 
 ##Repeat analysis post filteration##
+#Total length of dups/length of genome
+#In order to get total length of genome covered by duplications 
+#I merged the duplications to avoid counting overlapping dups multiple times
+#This was done using bedtools merge on bluewaves
+dups_fil_merged <- read.table("/Users/tejashree/Documents/Projects/cnv/scripts/output_files/bluewaves/cvir_filtered_dups_merged.bed", 
+                              sep="\t" , stringsAsFactors = FALSE)
+colnames(dups_fil_merged) <- c("CHROM", "POS","end","count","POS_collapse","end_collapse")
+#Length of merged dups
+dups_fil_merged$len <- (dups_fil_merged$end - dups_fil_merged$POS) + 1
+#Total number of bases of all duplications
+sum(dups_fil_merged$len) #118732426
+#% of genome covered by duplications
+(118732426/684000000)*100 #17%  
+#Zebrafish is 14.6% with 192,460,331 bp (Brown et al., 2012)
+#Humans ~4% (Conrad et al., 2010)
+
 #Filter original datasets for further analysis:  oysterdup3
 oysterdup3_fil <- anti_join(oysterdup3, filter_dups)
 pop_num_alts_present_fil <- anti_join(pop_num_alts_present,filter_dups)
@@ -601,7 +617,9 @@ cn_chr10_hmap_fil + geom_vline(xintercept = (65668439/2), color = "red", size=0.
 dup_genome_overlap <- read.table("/Users/tejashree/Documents/Projects/cnv//scripts/output_files/bluewaves/dup_genome_feat_overlap_mod.bed", 
                               sep="\t" , stringsAsFactors = FALSE)
 colnames(dup_fam_overlap) <- c("CHROM", "POS","end","ID","G_POS","G_end","Feature_name","l")
-
+#Instead of all genome features I pulled out exons and genes only 
+#then after intersect with dups just do wc -l on the output file to get
+#count of dups completely within exons and within genes
 
 
 ###### ANALYSIS POST ANNOTATION #######

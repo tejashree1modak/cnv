@@ -483,6 +483,41 @@ pop_sum_fil$prop <- pop_sum_fil$total_dups/11339  #number of filtered dups are 1
 ggplot(pop_sum_fil, aes(x=pop,y=prop, color=pop)) + geom_bar(stat = "identity", fill="white") + 
   labs(x="Populations", y="Proportion of total duplications per population", title ="Post filteration") + scale_color_manual(values=values,labels=labels)
 
+##Comparison of dups within samples for inbred pop ##
+anti_join(gtypes_long, filter_dups) %>% nrow()
+# For HG
+gtypes_long_HG <- anti_join(gtypes_long, filter_dups) %>% filter(num_alts > 0) %>% 
+  filter(pop == 'HG')
+ids_HG <- unique(gtypes_long_HG$ID)
+samples <- unique(gtypes_long_HG$sample)
+binaries_HG <- samples %>% 
+  map_dfc(~ ifelse(ids_HG %in% filter(gtypes_long_HG, sample == .x)$ID, 1, 0) %>% 
+            as.data.frame)
+names(binaries_HG) <- samples
+library(UpSetR)
+upset(binaries_HG, nsets = length(samples), main.bar.color = "SteelBlue", sets.bar.color = "DarkCyan", 
+      sets.x.label = "Number duplicate loci", text.scale = c(rep(1.4, 5), 2), order.by = "freq")
+colSums(binaries_HG)
+#48% dups are shared between atleast 2 samples
+# HG_HG0F2 HG_HG2F1 HG_HG2M5 
+# 914     1010      776 
+# For NG
+gtypes_long_NG <- anti_join(gtypes_long, filter_dups) %>% filter(num_alts > 0) %>% 
+  filter(pop == 'NG')
+ids_NG <- unique(gtypes_long_NG$ID)
+samples_NG <- unique(gtypes_long_NG$sample)
+binaries_NG <- samples_NG %>% 
+  map_dfc(~ ifelse(ids_NG %in% filter(gtypes_long_NG, sample == .x)$ID, 1, 0) %>% 
+            as.data.frame)
+names(binaries_NG) <- samples_NG
+#library(UpSetR)
+upset(binaries_NG, nsets = length(samples_NG), main.bar.color = "SteelBlue", sets.bar.color = "DarkCyan", 
+      sets.x.label = "Number duplicate loci", text.scale = c(rep(1.4, 5), 2), order.by = "freq")
+# 75% dups are shared between atleast 2 samples
+colSums(binaries_NG)
+# NG_NH0H4 NG_NH2F6 NG_NH2F8 NG_NH2M1 
+# 2342     2095     2137     2242 
+
 ## Frequency of duplications per chromosome POST FILTERATION ##
 gtypes_pos_fil <- map_dfr(select(oysterdup3_fil,CL_1:UMFS_6),getg)
 gtypes_pos_fil$POS <- oysterdup3_fil$POS

@@ -450,6 +450,12 @@ sum(dups_fil_merged$len) #118732426
 (118732426/684000000)*100 #17%  
 #Zebrafish is 14.6% with 192,460,331 bp (Brown et al., 2012)
 #Humans ~4% (Conrad et al., 2010)
+median(dups_fil_merged$len)
+mean(dups_fil_merged$len)
+summary(dups_fil_merged$len)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 161     425     891   15922    4575 1489626 
+dups_fil_merged %>% filter((len < 1000)) %>% nrow() #3920bp ie 35% dups < 1000
 
 #Filter original datasets for further analysis:  oysterdup3
 oysterdup3_fil <- anti_join(oysterdup3, filter_dups)
@@ -517,6 +523,49 @@ upset(binaries_NG, nsets = length(samples_NG), main.bar.color = "SteelBlue", set
 colSums(binaries_NG)
 # NG_NH0H4 NG_NH2F6 NG_NH2F8 NG_NH2M1 
 # 2342     2095     2137     2242 
+
+##Cumulative length of dups per pop ##
+pop_id <- pop_num_alts_present_fil %>% select(pop, ID) 
+cvir_filtered_dup_bed <- oysterdup3_fil %>% select(CHROM, POS, end, ID)
+left_join(cvir_filtered_dup_bed,pop_id) %>% filter(pop == "HG") %>%
+  write.table("/Users/tejashree/Documents/Projects/cnv/scripts/output_files/oyster_cnv/cvir_filtered_dups_HG.bed", 
+              append = FALSE, sep = "\t",quote = FALSE, row.names = F, col.names = FALSE)
+#scp to bluewaves and run bedtools merge and scp back
+dups_fil_merged_HG <- read.table("/Users/tejashree/Documents/Projects/cnv/scripts/output_files/bluewaves/cvir_filtered_dups_HG_merged.bed", 
+                              sep="\t" , stringsAsFactors = FALSE)
+colnames(dups_fil_merged_HG) <- c("CHROM", "POS","end","count","POS_collapse","end_collapse")
+dups_fil_merged_HG <- dups_fil_merged_HG %>% select(CHROM, POS, end)
+#Length of merged dups
+dups_fil_merged_HG$len <- (dups_fil_merged_HG$end - dups_fil_merged_HG$POS) + 1
+dups_fil_merged_HG$pop <- "HG"
+dups_fil_merged_HG <- dups_fil_merged_HG[order(dups_fil_merged_HG$len),] # check if sorting is necessary
+ggplot(dups_fil_merged_HG, aes(len)) + stat_ecdf(geom = "step") + 
+  labs(x="Length of duplication (bp)", y="Cumulative distribution of lengths",
+       title = "Cumulative distribution of duplication lengths per population")
+#Get files for other populations: change the pop name and rbind
+left_join(cvir_filtered_dup_bed,pop_id) %>% filter(pop == "LM") %>%
+  write.table("/Users/tejashree/Documents/Projects/cnv/scripts/output_files/oyster_cnv/cvir_filtered_dups_LM.bed", 
+              append = FALSE, sep = "\t",quote = FALSE, row.names = F, col.names = FALSE)
+#scp to bluewaves and run bedtools merge and scp back
+dups_fil_merged_LM <- read.table("/Users/tejashree/Documents/Projects/cnv/scripts/output_files/bluewaves/cvir_filtered_dups_LM_merged.bed", 
+                                 sep="\t" , stringsAsFactors = FALSE)
+colnames(dups_fil_merged_LM) <- c("CHROM", "POS","end","count","POS_collapse","end_collapse")
+dups_fil_merged_LM <- dups_fil_merged_LM %>% select(CHROM, POS, end)
+#Length of merged dups
+dups_fil_merged_LM$len <- (dups_fil_merged_LM$end - dups_fil_merged_LM$POS) + 1
+dups_fil_merged_LM$pop <- "LM"
+dups_fil_merged_LM <- dups_fil_merged_LM[order(dups_fil_merged_LM$len),]
+#Merge dataframe for all populations
+dups_fil_merged_pop <- rbind(dups_fil_merged_HG, dups_fil_merged_NG,dups_fil_merged_HI,dups_fil_merged_SM,dups_fil_merged_LM)
+dups_fil_merged_pop$pop <- factor (as.character(dups_fil_merged_pop$pop), 
+                                      levels=c("HG","NG","HI","SM","LM"))
+ggplot(dups_fil_merged_pop, aes(len)) + 
+  stat_ecdf(geom = "step", size = 0.5, n=500, aes(group = pop, colour = pop)) +  
+  scale_color_manual(values=values,labels=labels) +
+  labs(x="Length of duplication (bp)", y="Cumulative distribution of lengths",
+       title = "Cumulative distribution of duplication lengths per population")
+
+
 
 ## Frequency of duplications per chromosome POST FILTERATION ##
 gtypes_pos_fil <- map_dfr(select(oysterdup3_fil,CL_1:UMFS_6),getg)
@@ -811,6 +860,10 @@ gimap_genes_bed %>% write.table("/Users/tejashree/Documents/Projects/cnv/scripts
 ## POST FILTERATION## 
 # 2 dups mapped to gimap need to be filtered due to filteration criteria. 
 #DUP00223590, DUP01190157
+gimap_sub_fil <- gimap_sub %>% filter(ID != 'DUP00223590' & ID != 'DUP01190157')
+left_join(gimap_sub_fil,cn) %>% ggplot(aes(cn,pop, color =pop, shape=pop, label=pop)) + facet_wrap(~ID) + geom_jitter() + 
+  scale_color_manual(values=values,labels=labels) + 
+  scale_shape_manual(values=shapes,labels=labels) + scale_y_discrete(labels=labels)
 
 ## pulling out dups mapped to histone genes
 dplyr::filter(dup_annot, grepl('histone', annot)) %>% left_join(cn_gtypes_long,by="ID") %>% View()

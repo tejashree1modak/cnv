@@ -42,8 +42,10 @@ shapes = c("CL"=17,"CLP"=17,"CS"=17,"DEBY"=16,"HC"=17,
 #gene data - sizes but not more info
 oysterdup <- read.table("/Users/tejashree/Documents/Projects/cnv/delly/oysterduplicate_sort.bed",stringsAsFactors = FALSE)
 oysterdup$l <- oysterdup$V3 - oysterdup$V2 
-ggplot(oysterdup, aes(l))+geom_histogram(binwidth = 60)+ylim(c(0,100))+
-  xlim(c(0,10000))
+ggplot(oysterdup, aes(l))+geom_histogram(binwidth = 60,fill="steelblue")+ylim(c(0,100))+
+  xlim(c(0,10000)) + labs(x="Length of duplications", y="Frequency") + theme_classic() +
+  theme(axis.text.x  = element_text(size=18), axis.text.y  = element_text(size=18), axis.title.x  = element_text(face = "bold", size=20), axis.title.y  = element_text(face = "bold", size=20)) 
+  
 
 #all vcf data for each individual for each duplication
 oysterdup2 <- read.table("/Users/tejashree/Documents/Projects/cnv/delly/germline_nohead_dup.vcf",stringsAsFactors = FALSE)
@@ -471,6 +473,11 @@ dups_fil_merged %>% filter((len < 1000)) %>% nrow() #3920bp ie 35% dups < 1000
 
 #Filter original datasets for further analysis:  oysterdup3
 oysterdup3_fil <- anti_join(oysterdup3, filter_dups)
+#plot histogram of lengths
+ggplot(oysterdup3_fil, aes(length))+geom_histogram(binwidth = 60,fill="steelblue")+ylim(c(0,100))+
+  xlim(c(0,10000)) + labs(x="Length of duplications", y="Frequency") + theme_classic() +
+  theme(axis.text.x  = element_text(size=18), axis.text.y  = element_text(size=18), axis.title.x  = element_text(face = "bold", size=20), axis.title.y  = element_text(face = "bold", size=20)) 
+
 pop_num_alts_present_fil <- anti_join(pop_num_alts_present,filter_dups)
 #Count if number of dups is the same
 length(unique(pop_num_alts_present_fil[["ID"]])) #11339
@@ -500,6 +507,10 @@ pop_sum_fil <- data.frame(pop = names(binaries),total_dups=colSums(binaries))
 pop_sum_fil$prop <- pop_sum_fil$total_dups/11339  #number of filtered dups are 11339 
 ggplot(pop_sum_fil, aes(x=pop,y=prop, color=pop)) + geom_bar(stat = "identity", fill="white") + 
   labs(x="Populations", y="Proportion of total duplications per population", title ="Post filteration") + scale_color_manual(values=values,labels=labels)
+#For conference ppt with no colors or legend
+ggplot(pop_sum_fil, aes(x=pop,y=prop)) + geom_bar(stat = "identity", fill="light blue") + 
+  labs(x="Populations", y="Proportion of total duplications per population") + theme_classic() +
+  theme(axis.text.x  = element_text(size=16, vjust = 0.8, angle =45), axis.text.y  = element_text(size=18), axis.title.x  = element_text(face = "bold", size=20), axis.title.y  = element_text(face = "bold", size=20)) 
 
 ##Comparison of dups within samples for inbred pop ##
 anti_join(gtypes_long, filter_dups) %>% nrow()
@@ -577,8 +588,6 @@ ggplot(dups_fil_merged_pop, aes(len)) +
   labs(x="Length of duplication (bp)", y="Cumulative distribution of lengths",
        title = "Cumulative distribution of duplication lengths per population")
 
-
-
 ## Frequency of duplications per chromosome POST FILTERATION ##
 gtypes_pos_fil <- map_dfr(select(oysterdup3_fil,CL_1:UMFS_6),getg)
 gtypes_pos_fil$POS <- oysterdup3_fil$POS
@@ -613,6 +622,13 @@ pop_alts_per_chrom_len_fil$pop <- factor (as.character(pop_alts_per_chrom_len_fi
                                       levels=c("HI","SM","CS","HC","HCVA","CLP","CL","SL","LM","UMFS","NEH","HG","NG","DEBY","LOLA","OBOYS2"))
 ggplot(pop_alts_per_chrom_len_fil, aes(x=CHROM,y=(num_alts/len), color=pop)) + geom_bar(stat = "identity", fill="white") + 
   labs(x="Chromosome Number", y="Frequency of CNVs",title = "Post filteration")+ scale_color_manual(values=values,labels=labels)
+#For conference ppt with no colors or legend
+ggplot(pop_alts_per_chrom_len_fil, aes(x=CHROM,y=(num_alts/len))) + geom_bar(stat = "identity", fill="light blue") + 
+  labs(x="Chromosome Number", y="Frequency of CNVs") + theme_classic() +
+  theme(axis.text.x  = element_text(size=18), axis.text.y  = element_text(size=18), axis.title.x  = element_text(face = "bold", size=20), axis.title.y  = element_text(face = "bold", size=20)) + 
+  scale_x_discrete(labels=c("NC_035780.1"= "1","NC_035781.1"="2","NC_035782.1"="3","NC_035783.1"="4","NC_035784.1"="5","NC_035785.1"="6",
+                            "NC_035786.1"="7", "NC_035787.1"="8","NC_035788.1"="9","NC_035789.1"="10"))
+                                                                                                                                                                                                                                           
 
 ##Copy number analysis POST FILTERATION ##
 cn_gtypes_long_fil <- anti_join(cn_gtypes_long, filter_dups)

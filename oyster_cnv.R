@@ -450,6 +450,18 @@ sum(dups_fil_merged$len) #118732426
 (118732426/684000000)*100 #17%  
 #Zebrafish is 14.6% with 192,460,331 bp (Brown et al., 2012)
 #Humans ~4% (Conrad et al., 2010)
+#plot for this
+#df <- data.frame(species=c("F. heteroclitus", "H. sapiens", "D. rerio", "C. virginica"),
+#                 percent_genome=c(3.61, 5, 14.6, 17.3))
+df <- data.frame(species=c("Atlantic killifish", "Humans", "Zebrafish", "Eastern oyster"),
+                                  percent_genome=c(3.61, 5, 14.6, 17.3))
+ggplot(data=df, aes(x=species, y=percent_genome)) +
+  geom_bar(stat="identity",fill="steelblue",width=0.5) + labs(y="% Genome covered", x="Species") + ylim(0,20) +
+  geom_text(aes(label=percent_genome), vjust=-0.3, size=12) +
+  theme_classic() +
+  theme(axis.text.x  = element_text(face = "italic",size=18), axis.text.y  = element_text(size=18), axis.title.x  = element_text(face = "bold", size=20), axis.title.y  = element_text(face = "bold", size=20)) +
+  scale_x_discrete(limits=c("Atlantic killifish", "Humans", "Zebrafish", "Eastern oyster"))
+#basic stats
 median(dups_fil_merged$len)
 mean(dups_fil_merged$len)
 summary(dups_fil_merged$len)

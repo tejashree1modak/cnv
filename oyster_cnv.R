@@ -732,7 +732,15 @@ colnames(dup_fam_overlap) <- c("CHROM", "POS","end","ID","G_POS","G_end","Featur
 #Instead of all genome features I pulled out exons and genes only 
 #then after intersect with dups just do wc -l on the output file to get
 #count of dups completely within exons and within genes
-
+#Plot for % dups within genes for conference
+df2 <- data.frame(species=c("Atlantic killifish", "Humans", "Stickleback", "Eastern oyster"),
+                 percent_dups=c(6, 38.8, 33, 40))
+ggplot(data=df2, aes(x=species, y=percent_dups)) +
+  geom_bar(stat="identity",fill="steelblue",width=0.5) + labs(y="% Duplications completely within genes", x="Species") + ylim(0,50) +
+  geom_text(aes(label=percent_dups), vjust=-0.3, size=12) +
+  theme_classic() +
+  theme(axis.text.x  = element_text(face = "italic",size=18), axis.text.y  = element_text(size=18), axis.title.x  = element_text(face = "bold", size=20), axis.title.y  = element_text(face = "bold", size=20)) +
+  scale_x_discrete(limits=c("Atlantic killifish", "Stickleback","Humans", "Eastern oyster"))
 
 ###### ANALYSIS POST ANNOTATION #######
 # Annotating dups 

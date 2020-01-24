@@ -742,6 +742,17 @@ ggplot(data=df2, aes(x=species, y=percent_dups)) +
   theme(axis.text.x  = element_text(face = "italic",size=18), axis.text.y  = element_text(size=18), axis.title.x  = element_text(face = "bold", size=20), axis.title.y  = element_text(face = "bold", size=20)) +
   scale_x_discrete(limits=c("Atlantic killifish", "Stickleback","Humans", "Eastern oyster"))
 
+#Plot for %dups overlapping genomic features
+genome_feat <- data.frame(genome_feat=c("Gene", "Intergenic", "Intron", "Exon"),
+                          percent_dups=c(38.8, 29.4, 21.4, 2.7))
+ggplot(data=genome_feat, aes(x=genome_feat, y=percent_dups)) +
+  geom_bar(stat="identity",fill="black",width=0.5) + labs(y="% Duplications completely \n within a genomic feature", x="Genomic feature") + ylim(0,50) +
+  geom_text(aes(label=percent_dups), vjust=-0.3, size=) +
+  theme_classic() +
+  theme(axis.text.x  = element_text(face = "italic",size=12), axis.text.y  = element_text(size=8), axis.title.x  = element_text(face = "bold", size=12), axis.title.y  = element_text(face = "bold", size=12)) +
+  scale_x_discrete(limits=c("Gene", "Intergenic", "Intron", "Exon"))
+
+
 ###### ANALYSIS POST ANNOTATION #######
 # Annotating dups 
 # Read in annotations from ref genome

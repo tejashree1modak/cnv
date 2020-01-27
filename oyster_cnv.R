@@ -953,6 +953,27 @@ left_join(ref_annot, ref_annot_prot) %>% filter(grepl('GTPase IMAP family member
 #Once this mystery is solved I can make a table of how many duplications mapped to these expanded genes of interest.
 #Also have to think about how much overlap should be used as a cutoff  
 
+### Multigenerational and individual variation in expanded families ###
+#GIMAP multigenerational variation
+left_join(gimap_sub_fil,cn) %>% filter(pop =="HG" | pop =="NG") %>% 
+  ggplot(aes(cn,sample, color = pop, shape=pop, label= sample)) + facet_wrap(~ID) + geom_jitter() + 
+  #scale_color_manual(values=values,labels=labels) + 
+  scale_shape_manual(values=shapes,labels=labels) + scale_y_discrete(labels=labels)
+#GIMAP individual variation
+left_join(gimap_sub_fil,cn) %>%  
+  ggplot(aes(cn,sample, color = ID, label= sample)) + geom_jitter() +
+  #scale_color_manual(values=values,labels=labels) + 
+  #scale_shape_manual(values=shapes,labels=labels) + 
+  scale_y_discrete(labels=labels)
+left_join(gimap_sub_fil,cn) %>%  
+  ggplot(aes(ID,sample, color = pop, label= sample, size = cn)) + geom_jitter() +
+  #scale_color_manual(values=values,labels=labels) + 
+  #scale_shape_manual(values=shapes,labels=labels) + 
+  scale_y_discrete(labels=labels) + 
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5), axis.text.y = element_text(size = rel(0.7), face = "bold"))
+
+
 ###Vst calculations###
 # Vpopx is the CN variance for each respective population
 # Npopx is the number of individuals in each population

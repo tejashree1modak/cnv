@@ -847,13 +847,22 @@ left_join(ifi44_ID,oysterdup3) %>% select(CHROM, POS, end, ID) %>%
               row.names = F, col.names = FALSE)
 #The DUPs are on 3 diff chromosomes 1,8 and 9. The ref genome has 33 genes (unique LOCs annotated as IFI44) and are present on the same 3 chromosomes
 #Dups and exons mapped on ref genome using script density_plot.R shows that some dups are overlapping, some span the exon some dont, 
-#dups are present in 3 of the 4 regions where IFI44 exons are mapped. 
+#dups are present in 3 of the 4 regions where IFI44 exons are mapped.
+## POST FILTERATION## 
+ifi44_sub_fil <- anti_join(ifi44_sub, filter_dups) #no change post filteration
+#using ifi44_sub_fil for next steps for consistency with GIMAP and to remember that there was no change. 
+#plotting but removing an outlier that had a very high copy number by setting xlim
+left_join(ifi44_sub_fil,cn) %>% ggplot(aes(cn,pop, color =pop, shape=pop, label=pop)) + facet_wrap(~ID) + geom_jitter() + xlim(c(0,15)) + #removing outlier 
+  scale_color_manual(values=values,labels=labels) + 
+  scale_shape_manual(values=shapes,labels=labels) + scale_y_discrete(labels=labels)
+
 
 #GIMAP genes
+# 55 GIMAP genes (wc -l LOC) in the reference genome. Members include 4,7 and 8 and their multiple isoforms. LOCs overlap.
 dplyr::filter(dup_annot, grepl('GTPase IMAP family member', annot)) %>% select('ID') %>% unique() %>% tally() #23 multiple members 4,7,8
-dplyr::filter(dup_annot, grepl('GTPase IMAP family member 4', annot)) %>% select('ID') %>% unique() %>% tally() #21
-dplyr::filter(dup_annot, grepl('GTPase IMAP family member 7', annot)) %>% select('ID') %>% unique() %>% tally() #9
-dplyr::filter(dup_annot, grepl('GTPase IMAP family member 8', annot)) %>% select('ID') %>% unique() %>% tally() #5
+dplyr::filter(dup_annot, grepl('GTPase IMAP family member 4', annot)) %>% select('ID') %>% unique() %>% tally() #21 #19 post filtration
+dplyr::filter(dup_annot, grepl('GTPase IMAP family member 7', annot)) %>% select('ID') %>% unique() %>% tally() #9  #8 post filtration
+dplyr::filter(dup_annot, grepl('GTPase IMAP family member 8', annot)) %>% select('ID') %>% unique() %>% tally() #5  #4 post filtration
 #The individual tally doesnt add up because for some DUPs they are mapped to multiple LOCs
 dplyr::filter(dup_annot, grepl('scavenger receptor', annot)) %>% select('ID') %>% unique() %>% tally() #37 (multiple types/classes)
 #now find out how many of these dups are present in each population
@@ -956,21 +965,42 @@ left_join(ref_annot, ref_annot_prot) %>% filter(grepl('GTPase IMAP family member
 ### Multigenerational and individual variation in expanded families ###
 #GIMAP multigenerational variation
 left_join(gimap_sub_fil,cn) %>% filter(pop =="HG" | pop =="NG") %>% 
-  ggplot(aes(cn,sample, color = pop, shape=pop, label= sample)) + facet_wrap(~ID) + geom_jitter() + 
+  ggplot(aes(cn,sample, color = pop, shape=pop, label= sample)) + facet_wrap(~ID) + geom_point() + 
   #scale_color_manual(values=values,labels=labels) + 
-  scale_shape_manual(values=shapes,labels=labels) + scale_y_discrete(labels=labels)
+  scale_shape_manual(values=shapes) + scale_y_discrete(labels=labels)
 #GIMAP individual variation
 left_join(gimap_sub_fil,cn) %>%  
-  ggplot(aes(cn,sample, color = ID, label= sample)) + geom_jitter() +
-  #scale_color_manual(values=values,labels=labels) + 
-  #scale_shape_manual(values=shapes,labels=labels) + 
-  scale_y_discrete(labels=labels)
-left_join(gimap_sub_fil,cn) %>%  
-  ggplot(aes(ID,sample, color = pop, label= sample, size = cn)) + geom_jitter() +
+  ggplot(aes(ID,sample, color = pop, label= sample, size = cn)) + geom_jitter(width = 0.2) +
   #scale_color_manual(values=values,labels=labels) + 
   #scale_shape_manual(values=shapes,labels=labels) + 
   scale_y_discrete(labels=labels) + 
-  theme_minimal() +
+  theme(panel.background = element_rect(fill = "white"),
+        panel.grid.minor.y=element_blank(),
+        panel.grid.major.y=element_blank(),panel.grid.major.x = element_line(size = 0.25, linetype = 'solid',
+                                                                             colour = "black")) +
+  theme(axis.text.x =element_text(angle = 90, hjust = 1) , axis.text.y = element_text(size = rel(0.7), face = "bold")) 
+  #facet_wrap(~ID, nrow = 1)
+#IFI44 multigenerational variation
+left_join(ifi44_sub_fil,cn) %>% filter(pop =="HG" | pop =="NG") %>% 
+  ggplot(aes(cn,sample, color = pop, shape=pop, label= sample)) + facet_wrap(~ID) + geom_point() + 
+  #scale_color_manual(values=values,labels=labels) + 
+  scale_shape_manual(values=shapes) + scale_y_discrete(labels=labels)
+#IFI44 individual variation
+#LM_3 has 88 copies for DUP01184035 so if we remove that outlier to look at the rest of the data
+left_join(ifi44_sub_fil,cn) %>% filter(ID != "DUP01184035") %>%
+  ggplot(aes(ID,sample, color = log(cn), label= sample, size = cn)) + geom_jitter(width = 0.2) + 
+  scale_color_viridis_c(option = "C", direction = -1) +
+  scale_y_discrete(labels=labels) + 
+  #theme_dark() +
+  theme(panel.background = element_rect(fill = "#a9a9a9", colour = "#020202",
+                                        size = 2, linetype = "solid"),
+        panel.grid.minor.y=element_blank(),
+        panel.grid.major.y=element_blank(),panel.grid.major.x = element_line(size = 0.5, linetype = 'solid',
+                                                                             colour = "white")) +
+  # theme(panel.background = element_rect(fill = "#BFD5E3", colour = "#6D9EC1",
+  #                                       size = 2, linetype = "solid"),
+  #       panel.grid.minor.y=element_blank(),
+  #       panel.grid.major.y=element_blank()) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5), axis.text.y = element_text(size = rel(0.7), face = "bold"))
 
 

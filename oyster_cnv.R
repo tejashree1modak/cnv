@@ -920,6 +920,22 @@ gimap_sub_fil <- gimap_sub %>% filter(ID != 'DUP00223590' & ID != 'DUP01190157')
 left_join(gimap_sub_fil,cn) %>% ggplot(aes(cn,pop, color =pop, shape=pop, label=pop)) + facet_wrap(~ID) + geom_jitter() + 
   scale_color_manual(values=values,labels=labels) + 
   scale_shape_manual(values=shapes,labels=labels) + scale_y_discrete(labels=labels)
+#Creating an dataframe with all the info for gimap dups
+gimap_dup_fil <- left_join(gimap_sub_fil,cvir_filtered_dup_bed, by = "ID") %>% left_join(cn) #Joining, by = c("ID", "sample", "pop") the second time
+#Add info about annot
+gimap_4_dup_fil <- dplyr::filter(dup_annot, grepl('GTPase IMAP family member 4', annot)) %>% 
+                    select('ID') %>% unique() %>% filter(ID != 'DUP00223590' & ID != 'DUP01190157')
+gimap_7_dup_fil <- dplyr::filter(dup_annot, grepl('GTPase IMAP family member 7', annot)) %>% 
+  select('ID') %>% unique() %>% filter(ID != 'DUP00223590' & ID != 'DUP01190157')
+gimap_8_dup_fil <- dplyr::filter(dup_annot, grepl('GTPase IMAP family member 8', annot)) %>% 
+  select('ID') %>% unique() %>% filter(ID != 'DUP00223590' & ID != 'DUP01190157')
+gimap_dup_fil <-  gimap_dup_fil  %>% mutate(gimap4 = ifelse(ID %in% gimap_4_dup_fil$ID,1,0)) 
+gimap_dup_fil <-  gimap_dup_fil  %>% mutate(gimap7 = ifelse(ID %in% gimap_7_dup_fil$ID,1,0))
+gimap_dup_fil <-  gimap_dup_fil  %>% mutate(gimap8 = ifelse(ID %in% gimap_8_dup_fil$ID,1,0)) 
+#Confirm number of dups .. yes still 21. 
+length(unique(gimap_dup_fil$ID))
+length(unique(gimap_dup_fil$CHROM)) #on 5 chromosomes
+
 
 ## pulling out dups mapped to histone genes
 dplyr::filter(dup_annot, grepl('histone', annot)) %>% left_join(cn_gtypes_long,by="ID") %>% View()
@@ -980,6 +996,55 @@ left_join(gimap_sub_fil,cn) %>%
                                                                              colour = "black")) +
   theme(axis.text.x =element_text(angle = 90, hjust = 1) , axis.text.y = element_text(size = rel(0.7), face = "bold")) 
   #facet_wrap(~ID, nrow = 1)
+#including genome positions
+cn_gtypes_long_chr9_fil <- filter(cn_gtypes_long_fil, CHROM == "NC_035788.1") %>% select(POS, sample, cn) 
+#chr2
+gimap_dup_fil_chr2 <- filter(gimap_dup_fil, CHROM == "NC_035781.1")
+gimap_dup_fil_chr2 <- as.numeric(as.character(gimap_dup_fil$cn))
+gimap_cn_chr2_hmap_fil <- ggplot(data = gimap_dup_fil_chr2, mapping = aes(x = POS,y = sample,color = cn, shape = ID)) + 
+  geom_point(size = 3) + xlab(label = "Position")+ggtitle(label = "Chr 2") + 
+  scale_shape_manual(values=c(15, 16, 17, 18)) +
+  scale_color_viridis_c(option = "C", direction = -1,limits = c(0, 10))
+gimap_cn_chr2_hmap_fil 
+gimap_dup_fil_chr2 %>% ggplot() + geom_segment(aes(x = POS, y = sample, xend = end, yend = sample,color = cn)) + 
+  facet_wrap(~ ID, nrow = 1)
+#chr6
+gimap_dup_fil_chr6 <- filter(gimap_dup_fil, CHROM == "NC_035785.1")
+gimap_cn_chr6_hmap_fil <- ggplot(data = gimap_dup_fil_chr6, mapping = aes(x = POS,y = sample,color = cn, shape = ID)) + 
+  geom_point(size = 3) + xlab(label = "Position")+ggtitle(label = "Chr 6") + 
+  scale_shape_manual(values=c(15, 16, 17, 18)) +
+  scale_color_viridis_c(option = "C", direction = -1,limits = c(0, 10))
+gimap_cn_chr6_hmap_fil
+gimap_dup_fil_chr6 %>% ggplot() + geom_segment(aes(x = POS, y = sample, xend = end, yend = sample,color = cn)) + 
+  facet_wrap(~ ID, nrow = 1)
+#chr7
+gimap_dup_fil_chr7 <- filter(gimap_dup_fil, CHROM == "NC_035786.1")
+gimap_cn_chr7_hmap_fil <- ggplot(data = gimap_dup_fil_chr7, mapping = aes(x = POS,y = sample,color = cn, shape = ID)) + 
+  geom_point(size = 3) + xlab(label = "Position")+ggtitle(label = "Chr 7") + 
+  scale_shape_manual(values=c(15, 16, 17, 18, 0, 1,2)) +
+  scale_color_viridis_c(option = "C", direction = -1,limits = c(0, 10))
+gimap_cn_chr7_hmap_fil
+gimap_dup_fil_chr7 %>% ggplot() + geom_segment(aes(x = POS, y = sample, xend = end, yend = sample,color = cn)) + 
+  facet_wrap(~ ID, nrow = 1)
+#chr8
+gimap_dup_fil_chr8 <- filter(gimap_dup_fil, CHROM == "NC_035787.1")
+gimap_cn_chr8_hmap_fil <- ggplot(data = gimap_dup_fil_chr8, mapping = aes(x = POS,y = sample,color = cn, shape = ID)) + 
+  geom_point(size = 3) + xlab(label = "Position")+ggtitle(label = "Chr 8") + 
+  scale_shape_manual(values=c(15, 16, 17, 18, 0, 1,2)) +
+  scale_color_viridis_c(option = "C", direction = -1,limits = c(0, 10))
+gimap_cn_chr8_hmap_fil
+gimap_dup_fil_chr8 %>% ggplot() + geom_segment(aes(x = POS, y = sample, xend = end, yend = sample,color = cn)) + 
+  facet_wrap(~ ID, nrow = 1) #not useful because dup len is small to be seen
+#chr9
+gimap_dup_fil_chr9 <- filter(gimap_dup_fil, CHROM == "NC_035788.1")
+gimap_cn_chr9_hmap_fil <- ggplot(data = gimap_dup_fil_chr9, mapping = aes(x = POS,y = sample,color = cn, shape = ID)) + 
+  geom_point(size = 3) + xlab(label = "Position")+ggtitle(label = "Chr 9") + 
+  scale_shape_manual(values=c(15, 16, 17, 18, 0, 1,2)) +
+  scale_color_viridis_c(option = "C", direction = -1,limits = c(0, 10))
+gimap_cn_chr9_hmap_fil
+gimap_dup_fil_chr9 %>% ggplot() + geom_segment(aes(x = POS, y = sample, xend = end, yend = sample,color = cn)) + 
+  facet_wrap(~ ID, nrow = 1)
+
 #IFI44 multigenerational variation
 left_join(ifi44_sub_fil,cn) %>% filter(pop =="HG" | pop =="NG") %>% 
   ggplot(aes(cn,sample, color = pop, shape=pop, label= sample)) + facet_wrap(~ID) + geom_point() + 

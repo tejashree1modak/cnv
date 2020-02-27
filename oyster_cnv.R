@@ -848,6 +848,16 @@ left_join(ifi44_ID,oysterdup3) %>% select(CHROM, POS, end, ID) %>%
 #The DUPs are on 3 diff chromosomes 1,8 and 9. The ref genome has 33 genes (unique LOCs annotated as IFI44) and are present on the same 3 chromosomes
 #Dups and exons mapped on ref genome using script density_plot.R shows that some dups are overlapping, some span the exon some dont, 
 #dups are present in 3 of the 4 regions where IFI44 exons are mapped.
+# I get the LOCs mapped to each IFI44 gene from ref_annot
+ifi44_genes <- dplyr::filter(ref_annot, grepl('interferon-induced protein 44', annot)) %>% select('LOC') %>% unique()
+## The following two lines are present in the GIMAP section so when you rerun this code you can either run the lines here 
+#or in the GIMAP section and bed files can be created then.
+#oyster_genes <- read.table("/Users/tejashree/Documents/Projects/cnv/annot/Oyster_gene.bed",stringsAsFactors = FALSE)
+#colnames(oyster_genes)  <- c("CHROM", "POS","end", "LOC")
+ifi44_genes_bed <- semi_join(oyster_genes,ifi44_genes)
+ifi44_genes_bed2 <- semi_join(oyster_genes,ifi44_genes) 
+ifi44_genes_bed2$len <- ifi44_genes_bed2$end - ifi44_genes_bed2$POS
+ifi44_genes_bed2_chr1 <- ifi44_genes_bed2 %>% filter(CHROM == "NC_035780.1")
 ## POST FILTERATION## 
 ifi44_sub_fil <- anti_join(ifi44_sub, filter_dups) #no change post filteration
 #using ifi44_sub_fil for next steps for consistency with GIMAP and to remember that there was no change. 
@@ -855,6 +865,11 @@ ifi44_sub_fil <- anti_join(ifi44_sub, filter_dups) #no change post filteration
 left_join(ifi44_sub_fil,cn) %>% ggplot(aes(cn,pop, color =pop, shape=pop, label=pop)) + facet_wrap(~ID) + geom_jitter() + xlim(c(0,15)) + #removing outlier 
   scale_color_manual(values=values,labels=labels) + 
   scale_shape_manual(values=shapes,labels=labels) + scale_y_discrete(labels=labels)
+#Creating an dataframe with all the info for gimap dups
+ifi44_dup_fil <- left_join(ifi44_sub_fil,cvir_filtered_dup_bed, by = "ID") %>% left_join(cn) #Joining, by = c("ID", "sample", "pop") the second time
+#Confirm number of dups .. yes still 15. 
+length(unique(ifi44_dup_fil$ID))
+length(unique(ifi44_dup_fil$CHROM)) #on 3 chromosomes
 
 
 #GIMAP genes
@@ -1043,7 +1058,12 @@ gimap_cn_chr9_hmap_fil <- ggplot(data = gimap_dup_fil_chr9, mapping = aes(x = PO
   scale_color_viridis_c(option = "C", direction = -1,limits = c(0, 10))
 gimap_cn_chr9_hmap_fil
 gimap_dup_fil_chr9 %>% ggplot() + geom_segment(aes(x = POS, y = sample, xend = end, yend = sample,color = cn)) + 
-  facet_wrap(~ ID, nrow = 1)
+  facet_wrap(~ ID, nrow = 1) #not useful because dup len is small to be seen
+
+#Plotting gimap genes and dups on same plot
+ggplot() + 
+  geom_segment(data=gimap_dup_fil, aes(x=POS, y=ID,xend = end, yend = ID), color='green') + 
+  geom_segment(data=gimap_genes_bed, aes(x=POS, y=LOC, xend = end, yend = LOC), color='red') + facet_wrap(~ CHROM)
 
 #IFI44 multigenerational variation
 left_join(ifi44_sub_fil,cn) %>% filter(pop =="HG" | pop =="NG") %>% 
@@ -1067,7 +1087,33 @@ left_join(ifi44_sub_fil,cn) %>% filter(ID != "DUP01184035") %>%
   #       panel.grid.minor.y=element_blank(),
   #       panel.grid.major.y=element_blank()) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5), axis.text.y = element_text(size = rel(0.7), face = "bold"))
-
+#including genome positions
+#chr1
+ifi44_dup_fil_chr1 <- filter(ifi44_dup_fil, CHROM == "NC_035780.1")
+ifi44_cn_chr1_hmap_fil <- ggplot(data = ifi44_dup_fil_chr1, mapping = aes(x = POS,y = sample,color = cn, shape = ID)) + 
+  geom_point(size = 3) + xlab(label = "Position")+ggtitle(label = "Chr1") + 
+  scale_shape_manual(values=c(15, 16, 17, 18)) +
+  scale_color_viridis_c(option = "C", direction = -1,limits = c(0, 10)) + 
+  geom_segment(aes(x = POS, y = sample, xend = end, yend = sample,color = cn))
+ifi44_cn_chr1_hmap_fil 
+ifi44_dup_fil_chr1 %>% ggplot() + geom_segment(aes(x = POS, y = sample, xend = end, yend = sample,color = cn)) + 
+  facet_wrap(~ ID, nrow = 1)
+#chr6
+ifi44_dup_fil_chr6 <- filter(ifi44_dup_fil, CHROM == "NC_035787.1")
+ifi44_cn_chr6_hmap_fil <- ggplot(data = ifi44_dup_fil_chr6, mapping = aes(x = POS,y = sample,color = cn, shape = ID)) + 
+  geom_point(size = 3) + xlab(label = "Position")+ggtitle(label = "Chr6") + 
+  scale_shape_manual(values=c(15, 16, 17, 18,0,1,2,5,7,9)) +
+  scale_color_viridis_c(option = "C", direction = -1,limits = c(0, 10)) + 
+  geom_segment(aes(x = POS, y = sample, xend = end, yend = sample,color = cn))
+ifi44_cn_chr6_hmap_fil
+#chr7
+ifi44_dup_fil_chr7 <- filter(ifi44_dup_fil, CHROM == "NC_035788.1")
+ifi44_cn_chr7_hmap_fil <- ggplot(data = ifi44_dup_fil_chr7, mapping = aes(x = POS,y = sample,color = cn, shape = ID)) + 
+  geom_point(size = 3) + xlab(label = "Position")+ggtitle(label = "Chr7") + 
+  scale_shape_manual(values=c(15, 16, 17, 18,0,1,2,5,7,9)) +
+  scale_color_viridis_c(option = "C", direction = -1,limits = c(0, 10)) + 
+  geom_segment(aes(x = POS, y = sample, xend = end, yend = sample,color = cn))
+ifi44_cn_chr7_hmap_fil
 
 ###Vst calculations###
 # Vpopx is the CN variance for each respective population

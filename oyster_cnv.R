@@ -11,6 +11,7 @@ library(ggplot2)
 #library(plyr)
 #library(dplyr)
 library(scales)
+library(gridExtra)
 
 #Labels, colors and shapes for consistent plotting 
 labels = c("CL"="LA-HSCL","CLP"="CB-LSCP","CS"="DB-HSCS","DEBY"="CB-DEBY","HC"="DB-LSHC",
@@ -645,9 +646,13 @@ hist(cn_gtypes_long_fil$cn)
 mean_cn_per_pop <- cn_gtypes_long_fil %>% select(ID,cn,pop) %>% group_by(pop) %>% summarise(mean_cn = mean(cn), sd = sd(cn))
 mean_cn_per_pop <- mean_cn_per_pop %>% arrange(desc(sd))
 colnames(mean_cn_per_pop) <- c('Location', 'Average copy number', 'Std Dev')
+grid.table(mean_cn_per_pop)
+mean_cn_per_pop$Location <- factor (as.character(mean_cn_per_pop$Location), 
+                                   levels=c("SL","CLP","HC","HCVA","LOLA","OBOYS2","LM","SM","CS","UMFS","CL","DEBY","NEH","HI","NG","HG"))
 ggplot(data=mean_cn_per_pop,aes(x=Location)) + 
-  geom_errorbar(aes(ymax = mean_cn_per_pop$`Average copy number` + mean_cn_per_pop$`Std Dev`, ymin = mean_cn_per_pop$`Average copy number` - mean_cn_per_pop$`Std Dev`),position = "dodge", color = "blue") + 
-  geom_point(data=mean_cn_per_pop,y=mean_cn_per_pop$`Average copy number`)
+  geom_errorbar(aes(ymax = mean_cn_per_pop$`Average copy number` + mean_cn_per_pop$`Std Dev`, ymin = mean_cn_per_pop$`Average copy number` - mean_cn_per_pop$`Std Dev`),position = "dodge", color = "blue", width = 0.5) + 
+  geom_point(data=mean_cn_per_pop,y=mean_cn_per_pop$`Average copy number`) + labs(y = "Average Copy Number") + theme_gray()
+ggsave("Mean_cn_per_pop.jpeg",width = 8, height = 5)
 
 #change the sample names and order the levels 
 #cn on chr1 POST FILTERATION #

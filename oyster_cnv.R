@@ -640,6 +640,15 @@ length(unique(cn_gtypes_long_fil[["ID"]])) #11339
 min(cn_gtypes_long_fil[,5], na.rm=T) #-1
 max(cn_gtypes_long_fil[,5], na.rm=T) #20025
 hist(cn_gtypes_long_fil$cn)
+
+##Comparison of cn within locations ##
+mean_cn_per_pop <- cn_gtypes_long_fil %>% select(ID,cn,pop) %>% group_by(pop) %>% summarise(mean_cn = mean(cn), sd = sd(cn))
+mean_cn_per_pop <- mean_cn_per_pop %>% arrange(desc(sd))
+colnames(mean_cn_per_pop) <- c('Location', 'Average copy number', 'Std Dev')
+ggplot(data=mean_cn_per_pop,aes(x=Location)) + 
+  geom_errorbar(aes(ymax = mean_cn_per_pop$`Average copy number` + mean_cn_per_pop$`Std Dev`, ymin = mean_cn_per_pop$`Average copy number` - mean_cn_per_pop$`Std Dev`),position = "dodge", color = "blue") + 
+  geom_point(data=mean_cn_per_pop,y=mean_cn_per_pop$`Average copy number`)
+
 #change the sample names and order the levels 
 #cn on chr1 POST FILTERATION #
 cn_gtypes_long_chr1_fil <- filter(cn_gtypes_long_fil, CHROM == "NC_035780.1") %>% select(POS, sample, cn) 
@@ -951,7 +960,12 @@ gimap_dup_fil <-  gimap_dup_fil  %>% mutate(gimap8 = ifelse(ID %in% gimap_8_dup_
 length(unique(gimap_dup_fil$ID))
 length(unique(gimap_dup_fil$CHROM)) #on 5 chromosomes
 
-
+## Are there dups in housekeeping genes?
+dplyr::filter(dup_annot, grepl('elongation factor 1', annot)) %>% left_join(cn_gtypes_long_fil,by="ID") %>% filter(cn>0) %>% View() #4dups!
+dplyr::filter(dup_annot, grepl('glyceraldehyde-3-phosphate dehydrogenase', annot)) %>% left_join(cn_gtypes_long_fil,by="ID") %>% View() #0 dups map to GAPDH
+dplyr::filter(dup_annot, grepl('actin-like', annot, fixed = TRUE)) %>% View() # 3 dups DUP00222888,DUP00223139,DUP00223228 and other actins NOT beta-actin specifically 
+dplyr::filter(dup_annot, grepl('actin-like', annot, fixed = TRUE)) %>% 
+  left_join(cn_gtypes_long_fil,by="ID") %>% filter(cn>0) %>% filter(ID == 'DUP00222888'| ID =='DUP00223139'| ID =='DUP00223228') %>% View()
 ## pulling out dups mapped to histone genes
 dplyr::filter(dup_annot, grepl('histone', annot)) %>% left_join(cn_gtypes_long,by="ID") %>% View()
 
@@ -1103,8 +1117,8 @@ ifi44_dup_fil_chr6 <- filter(ifi44_dup_fil, CHROM == "NC_035787.1")
 ifi44_cn_chr6_hmap_fil <- ggplot(data = ifi44_dup_fil_chr6, mapping = aes(x = POS,y = sample,color = cn, shape = ID)) + 
   geom_point(size = 3) + xlab(label = "Position")+ggtitle(label = "Chr6") + 
   scale_shape_manual(values=c(15, 16, 17, 18,0,1,2,5,7,9)) +
-  scale_color_viridis_c(option = "C", direction = -1,limits = c(0, 10)) + 
-  geom_segment(aes(x = POS, y = sample, xend = end, yend = sample,color = cn))
+  scale_color_viridis_c(option = "C", direction = -1,limits = c(0, 10)) + theme(axis.text.y = element_text(size= 6)) +
+  geom_segment(aes(x = POS, y = sample, xend = end, yend = sample,color = cn)) + facet_wrap(~ID)
 ifi44_cn_chr6_hmap_fil
 #chr7
 ifi44_dup_fil_chr7 <- filter(ifi44_dup_fil, CHROM == "NC_035788.1")

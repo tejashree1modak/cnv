@@ -385,11 +385,14 @@ common_filter_dups <-
 #ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/002/022/765/GCA_002022765.4_C_virginica-3.0
 #The file is GCA_002022765.4_C_virginica-3.0_rm.out.gz
 #Repeat locations in the C.vir genome as shown by repeat masker out file
+#Input file generated from NCBI as preprocessed to make a bedfile of repeats as follows:
+# awk -v OFS='\t' '{print $6, $7}' GCA_002022765.4_C_virginica-3.0_rm.out > Cvir_genome_repeats.txt
 #only start and stop pulled out of output
 repeats <- read.table("/Users/tejashree/Documents/Projects/cnv/genome/repeat_masker/Cvir_genome_repeats.txt", 
                       sep="\t" , header = TRUE, skip = 1, stringsAsFactors = FALSE)
 repeats$len <- repeats$end - repeats$begin
 #A bedfile of repeats was made (Cvir_genome_repeats.bed)
+# awk -v OFS='\t' 'NR>3{print $5,$6,$7,$5"_"$7}' GCA_002022765.4_C_virginica-3.0_rm.out >  Cvir_genome_repeats.bed
 #The repeat output has different chromosome numbers so the file was edited to match names (eg. NC_035789.1) (Cvir_genome_repeats_mod.bed)
 #To get overlaps of dups and repeats bedtools.sh was used.
 #Output file was cleaned up to remove CHROM column that was present twice 

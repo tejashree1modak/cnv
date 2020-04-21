@@ -65,7 +65,7 @@ header <- strsplit("CHROM POS ID      REF     ALT     QUAL    FILTER
                    UMFS_5  UMFS_6", "\\s+")[[1]]
 colnames(oysterdup2)<-header
 oysterdup3 <-dplyr::filter(oysterdup2,FILTER=="PASS")
-oysterdup3$end <- str_split(oysterdup3$INFO, ';') %>%
+oysterdup3$end <- str_split(oysterdup3$INFO, ';') %>%         
   map_chr(5) %>% str_split('=') %>% map_chr(2) %>% as.integer()
 oysterdup3$length <- oysterdup3$end - oysterdup3$POS #Smallest is 160bp and largest is 999,122bp
 filter(oysterdup3, length > 1000) %>% nrow() #6551 So if we filter the dups based on len 
@@ -440,7 +440,7 @@ semi_join(cvir_dup_bed, pop_shared_fil) %>%
   write.table("/Users/tejashree/Documents/Projects/cnv/scripts/output_files/oyster_cnv/cvir_filtered_fully_shared_dups.bed", append = FALSE, sep = "\t",quote = FALSE,
               row.names = F, col.names = FALSE)
 
-##Repeat analysis post filteration##
+##Repeat the analysis post filteration##
 #Total length of dups/length of genome
 #In order to get total length of genome covered by duplications 
 #I merged the duplications to avoid counting overlapping dups multiple times
@@ -501,6 +501,8 @@ binaries <- pops %>%
 names(binaries) <- pops
 # have a look at the data
 head(binaries)  
+# how many duplications are present in more than 3 locations
+filter(binaries,rowSums(binaries)>3) %>% nrow() #6769 ie 6%
 # plot the sets with UpSetR
 library(UpSetR)
 upset(binaries, nsets = length(pops), main.bar.color = "SteelBlue", sets.bar.color = "DarkCyan", 

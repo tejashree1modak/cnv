@@ -45,7 +45,7 @@ oysterdup <- read.table("/Users/tejashree/Documents/Projects/cnv/delly/oysterdup
 oysterdup$l <- oysterdup$V3 - oysterdup$V2 
 ggplot(oysterdup, aes(l))+geom_histogram(binwidth = 60,fill="steelblue")+ylim(c(0,100))+
   xlim(c(0,10000)) + labs(x="Length of duplications", y="Frequency") + theme_classic() +
-  theme(axis.text.x  = element_text(size=18), axis.text.y  = element_text(size=18), axis.title.x  = element_text(face = "bold", size=20), axis.title.y  = element_text(face = "bold", size=20)) 
+  theme(axis.text.x  = element_text(size=12), axis.text.y  = element_text(size=12), axis.title.x  = element_text(face = "bold", size=12), axis.title.y  = element_text(face = "bold", size=12)) 
   
 
 #all vcf data for each individual for each duplication
@@ -766,9 +766,9 @@ genome_feat <- data.frame(genome_feat=c("Gene", "Intergenic", "Intron", "Exon"),
                           percent_dups=c(38.8, 29.4, 21.4, 2.7))
 ggplot(data=genome_feat, aes(x=genome_feat, y=percent_dups)) +
   geom_bar(stat="identity",fill="black",width=0.5) + labs(y="% Duplications completely \n within a genomic feature", x="Genomic feature") + ylim(0,50) +
-  geom_text(aes(label=percent_dups), vjust=-0.3, size=) +
+  geom_text(aes(label=percent_dups), vjust=-0.3, size=6) +
   theme_classic() +
-  theme(axis.text.x  = element_text(face = "italic",size=12), axis.text.y  = element_text(size=8), axis.title.x  = element_text(face = "bold", size=12), axis.title.y  = element_text(face = "bold", size=12)) +
+  theme(axis.text.x  = element_text(face = "italic",size=12), axis.text.y  = element_text(size=12), axis.title.x  = element_text(face = "bold", size=12), axis.title.y  = element_text(face = "bold", size=12)) +
   scale_x_discrete(limits=c("Gene", "Intergenic", "Intron", "Exon"))
 
 

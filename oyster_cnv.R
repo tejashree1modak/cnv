@@ -781,15 +781,20 @@ colnames(ref_annot) <- c("LOC", "annot")
 # Read in bed file of dups mapped to LOCs from ref genome
 map_dup <- read.table("/Users/tejashree/Documents/Projects/cnv/annot/Oyster_Dup_gene", sep="\t" , stringsAsFactors = FALSE)
 colnames(map_dup) <- c("ID", "LOC")
-dup_annot <- left_join(map_dup, ref_annot, by = "LOC") 
-dup_annot %>% group_by(annot) %>% summarize(count=n()) # There are 593 with no annotation
+# Keep those duplications that passed the filter
+map_dup_fil <- map_dup %>% filter(map_dup$ID %in% oysterdup3_fil$ID)
+dup_annot_fil <- left_join(map_dup_fil, ref_annot, by = "LOC") 
+# **from original dups without filtering**
+dup_annot <- left_join(map_dup, ref_annot, by = "LOC")
+# **Continue with filtered dups to get right GO and KEGG mapping
+dup_annot_fil %>% group_by(annot) %>% summarize(count=n()) # There are 593 with no annotation
 #The proportion shows that highest dups mapped on chr5 and lowest on chr10. Need to see what are the annot for those dups.
 #chrom_pos_id <- 
-dup_annot_chr5 <- oysterdup3 %>% select(CHROM,POS,ID) %>% left_join(dup_annot, by='ID') %>% 
+dup_annot_chr5 <- oysterdup3_fil %>% select(CHROM,POS,ID) %>% left_join(dup_annot_fil, by='ID') %>% 
   filter(CHROM=="NC_035784.1") %>% filter(!is.na(LOC)) %>% filter(!is.na(annot)) %>% 
   filter(!grepl("uncharacterized",annot))
 #lectins
-dup_annot_chr10 <- oysterdup3 %>% select(CHROM,POS,ID) %>% left_join(dup_annot, by='ID') %>% 
+dup_annot_chr10 <- oysterdup3_fil %>% select(CHROM,POS,ID) %>% left_join(dup_annot_fil, by='ID') %>% 
   filter(CHROM=="NC_035789.1") %>% filter(!is.na(LOC)) %>% filter(!is.na(annot)) %>% 
   filter(!grepl("uncharacterized",annot))
 #toll-like receptors
@@ -800,22 +805,24 @@ dup_annot_chr10 <- oysterdup3 %>% select(CHROM,POS,ID) %>% left_join(dup_annot, 
 ref_annot_prot <- read.table("/Users/tejashree/Documents/Projects/cnv/annot/ref_annot_prot", 
                         sep="\t" , quote="", fill=FALSE, stringsAsFactors = FALSE)
 colnames(ref_annot_prot) <- c("LOC", "Sequence_name")
-#Join this with DUP_IDs (map_dup has DUP_ID and LOC)
+#Join this with DUP_IDs (map_dup has DUP_ID and LOC) **original with no filtering**
 dup_loc_xp <- left_join(map_dup, ref_annot_prot, by="LOC") 
+# with FILTERED dups
+dup_loc_xp_fil <- left_join(map_dup_fil, ref_annot_prot, by="LOC")
 #Join that with XP_sequences_Cvirginica_GCF_002022765.2_GO.tab by XP 
 ref_annot_go_kegg <- read.table("/Users/tejashree/Documents/Projects/oyster/exp_data/Spring2016/genome/XP_sequences_Cvirginica_GCF_002022765.2_GO.tab", 
                              sep="\t" , quote="", fill=FALSE, stringsAsFactors = FALSE, header = TRUE)
 colnames(ref_annot_go_kegg) <- c("Sequence_name","Sequence_length","Sequence_description","GO_ID","Enzyme_code","Enzyme_name")
-left_join(dup_loc_xp, ref_annot_go_kegg, by="Sequence_name") %>% head()
+left_join(dup_loc_xp_fil, ref_annot_go_kegg, by="Sequence_name") %>% head()
 #What % LOCs are mapped to kegg
 ref_annot_go_kegg %>% filter(!is.na(Enzyme_name)) %>% filter(Enzyme_name != "") %>% nrow() #10.4 % (100*6273)/60213
 ref_annot_go_kegg %>% filter(!is.na(GO_ID)) %>% filter(GO_ID != "") %>% nrow() #58.2% (100*35081)/30213
 
-#Extract DUP_IDs, GO_IDs
-dup_go <- left_join(dup_loc_xp, ref_annot_go_kegg, by="Sequence_name") %>% select(ID, GO_ID) %>% unique() 
+#Extract DUP_IDs, GO_IDs *with FILTERED dups**
+dup_go <- left_join(dup_loc_xp_fil, ref_annot_go_kegg, by="Sequence_name") %>% select(ID, GO_ID) %>% unique() 
 #  separate(GO_ID, sep = ";", into = paste("V", 1:13, sep = "_")) 
 #What % dups mapped to GO terms
-dup_go %>% filter(!is.na(GO_ID)) %>% filter(GO_ID != "") %>% nrow() # 62% (8300*100)/13387
+dup_go %>% filter(!is.na(GO_ID)) %>% filter(GO_ID != "") %>% nrow() # 63% (7184*100)/11339
 dup_go %>% filter(!is.na(GO_ID)) %>% filter(GO_ID != "") %>% 
   write.table("/Users/tejashree/Documents/Projects/cnv/scripts/output_files/oyster_cnv/dup_go.txt", append = FALSE, sep = " ",quote = FALSE,
                                                                          row.names = F, col.names = FALSE)
@@ -828,15 +835,21 @@ write.table(go_vector_sorted, "/Users/tejashree/Documents/Projects/cnv/delly/go_
 write.table(go_vector_sorted$Var1, "/Users/tejashree/Documents/Projects/cnv/delly/go_only.txt", append = FALSE, sep = ",",quote = FALSE,
             row.names = F, col.names = FALSE)
 #Highest freq: molecular funtion, ion binding, cellular component, signal transduction, cellular protein modification process
-#Extract DUP_IDs, EC#s :pathway mapping 
-dup_kegg <- left_join(dup_loc_xp, ref_annot_go_kegg, by="Sequence_name") %>% select(ID, Enzyme_name) %>% unique() 
+
+#Extract DUP_IDs, EC#s :pathway mapping *with FILTERED dups**
+dup_kegg <- left_join(dup_loc_xp_fil, ref_annot_go_kegg, by="Sequence_name") %>% select(ID, Enzyme_code, Enzyme_name) %>% unique() 
 #What % dups mapped to an EC number via kegg
-dup_kegg %>% filter(!is.na(Enzyme_name)) %>% filter(Enzyme_name != "") %>% nrow() # 11% (1420*100)/13387
+dup_kegg %>% filter(!is.na(Enzyme_name)) %>% filter(Enzyme_name != "") %>% nrow() # 10.78% (1230*100)/11339
 #separate the enzyme names and get count for each
 kegg_vector <- as.data.frame(table(unlist(strsplit(as.character(dup_kegg$Enzyme_name), ";"))))
+kegg_vector_sorted <-  kegg_vector[order(kegg_vector$Freq, decreasing=TRUE),] 
 #Highest:Nucleoside-triphosphate phosphatase,Acting on peptide bonds (peptidases),Protein-serine/threonine phosphatase,
 #Protein-tyrosine-phosphatase,Adenosinetriphosphatase
+#make a csv file for paper
+write.table(kegg_vector_sorted, "/Users/tejashree/Documents/Projects/cnv/scripts/oyster_cnv/kegg_vector_sorted.txt", append = FALSE, sep = ",",quote = FALSE,
+            row.names = F, col.names = TRUE)
 
+##########################################################
 ##DO dups exist in expanded gene families?
 ##Pull out dups that are annotated as the gene members that we know belong to expanded families
 dplyr::filter(dup_annot, grepl('interferon-induced protein 44', annot)) %>% select('ID') %>% unique() %>% tally() #15
@@ -970,14 +983,14 @@ gimap_dup_fil <-  gimap_dup_fil  %>% mutate(gimap8 = ifelse(ID %in% gimap_8_dup_
 length(unique(gimap_dup_fil$ID))
 length(unique(gimap_dup_fil$CHROM)) #on 5 chromosomes
 
-## Are there dups in housekeeping genes?
+## Are there dups in housekeeping genes? *using FILTERED DUPS by using cn_gtypes_long_fil **
 dplyr::filter(dup_annot, grepl('elongation factor 1', annot)) %>% left_join(cn_gtypes_long_fil,by="ID") %>% filter(cn>0) %>% View() #4dups!
 dplyr::filter(dup_annot, grepl('glyceraldehyde-3-phosphate dehydrogenase', annot)) %>% left_join(cn_gtypes_long_fil,by="ID") %>% View() #0 dups map to GAPDH
 dplyr::filter(dup_annot, grepl('actin-like', annot, fixed = TRUE)) %>% View() # 3 dups DUP00222888,DUP00223139,DUP00223228 and other actins NOT beta-actin specifically 
 dplyr::filter(dup_annot, grepl('actin-like', annot, fixed = TRUE)) %>% 
   left_join(cn_gtypes_long_fil,by="ID") %>% filter(cn>0) %>% filter(ID == 'DUP00222888'| ID =='DUP00223139'| ID =='DUP00223228') %>% View()
 ## pulling out dups mapped to histone genes
-dplyr::filter(dup_annot, grepl('histone', annot)) %>% left_join(cn_gtypes_long,by="ID") %>% View()
+dplyr::filter(dup_annot, grepl('histone', annot)) %>% left_join(cn_gtypes_long_fil,by="ID") %>% View()
 
 
 ### Duplications and expanded family mapping ###

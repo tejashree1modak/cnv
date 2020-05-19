@@ -617,6 +617,13 @@ pop_alts_per_chrom_fil$pop <- factor (as.character(pop_alts_per_chrom_fil$pop),
                                   levels=c("HI","SM","CS","HC","HCVA","CLP","CL","SL","LM","UMFS","NEH","HG","NG","DEBY","LOLA","OBOYS2"))
 ggplot(pop_alts_per_chrom_fil, aes(x=CHROM,y=num_alts, color=pop)) + geom_bar(stat = "identity", fill="white") + 
   labs(x="Chromosome Number", y="Frequency of CNVs", title ="Post filteration") + scale_color_manual(values=values,labels=labels)
+# ANOVA for frequency of CNVs per chromosome
+res_aov <- aov(num_alts ~ CHROM, data = pop_alts_per_chrom_fil)
+summary(res_aov)
+res_tuk <- TukeyHSD(res_aov)
+#shows chr5 has significantly higher freq of cnv than any other chr
+res_tuk_df <- as.data.frame(res_tuk$CHROM) 
+
 # normalized by chromosome size
 chrom_len <- data.frame(CHROM=c("NC_035780.1","NC_035781.1","NC_035782.1","NC_035783.1","NC_035784.1","NC_035785.1",
                                 "NC_035786.1", "NC_035787.1","NC_035788.1","NC_035789.1"), 
@@ -842,12 +849,20 @@ dup_kegg <- left_join(dup_loc_xp_fil, ref_annot_go_kegg, by="Sequence_name") %>%
 dup_kegg %>% filter(!is.na(Enzyme_name)) %>% filter(Enzyme_name != "") %>% nrow() # 10.78% (1230*100)/11339
 #separate the enzyme names and get count for each
 kegg_vector <- as.data.frame(table(unlist(strsplit(as.character(dup_kegg$Enzyme_name), ";"))))
+colnames(kegg_vector) <- c("Enzyme_name", "Freq")
 kegg_vector_sorted <-  kegg_vector[order(kegg_vector$Freq, decreasing=TRUE),] 
 #Highest:Nucleoside-triphosphate phosphatase,Acting on peptide bonds (peptidases),Protein-serine/threonine phosphatase,
 #Protein-tyrosine-phosphatase,Adenosinetriphosphatase
 #make a csv file for paper
-write.table(kegg_vector_sorted, "/Users/tejashree/Documents/Projects/cnv/scripts/oyster_cnv/kegg_vector_sorted.txt", append = FALSE, sep = ",",quote = FALSE,
+write.table(kegg_vector_sorted, "/Users/tejashree/Documents/Projects/cnv/scripts/output_files/oyster_cnv/kegg_vector_sorted.csv", append = FALSE, sep = ",",quote = FALSE,
             row.names = F, col.names = TRUE)
+#Enzyme code count
+kegg_code_vector <- as.data.frame(table(unlist(strsplit(as.character(dup_kegg$Enzyme_code), ";"))))
+colnames(kegg_code_vector) <- c("Enzyme_code", "Freq")
+kegg_code_vector <-  kegg_code_vector[order(kegg_code_vector$Freq, decreasing=TRUE),] 
+
+dplyr::filter(dup_kegg, grepl('Nucleoside-triphosphate phosphatase', Enzyme_name)) %>% select('ID') %>% 
+  unique() %>% tally() #252
 
 ##########################################################
 ##DO dups exist in expanded gene families?

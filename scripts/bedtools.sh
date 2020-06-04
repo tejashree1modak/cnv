@@ -36,7 +36,17 @@ echo "Starting bedtools intersect"
 
 #bedtools merge -i /data3/schwartzlab/tejashree/oyster_cnv/dups/filtration/cvir_filtered_dups.bed -c 1,2,3 -o count,collapse,collapse  > /data3/schwartzlab/tejashree/oyster_cnv/dups/filtration/cvir_filtered_dups_merged.bed
 
-bedtools merge -i /data3/schwartzlab/tejashree/oyster_cnv/dups/filtration/cvir_filtered_dups_LM.bed -c 1,2,3 -o count,collapse,collapse  > /data3/schwartzlab/tejashree/oyster_cnv/dups/filtration/cvir_filtered_dups_LM_merged.bed
+#bedtools merge -i /data3/schwartzlab/tejashree/oyster_cnv/dups/filtration/cvir_filtered_dups_LM.bed -c 1,2,3 -o count,collapse,collapse  > /data3/schwartzlab/tejashree/oyster_cnv/dups/filtration/cvir_filtered_dups_LM_merged.bed
+
+#bedtools intersect -a /data3/schwartzlab/tejashree/oyster_cnv/dups/filtration/cvir_filtered_dups.bed -b /data3/schwartzlab/tejashree/oyster_cnv/cvir_genome/intron_intergenic.bed -wo -f 1 > /data3/schwartzlab/tejashree/oyster_cnv/dups/filtration/dup_intron_intergenic_full_overlap.bed
+
+#bedtools intersect -a /data3/schwartzlab/tejashree/oyster_cnv/dups/filtration/cvir_filtered_dups.bed -b /data3/schwartzlab/tejashree/oyster_cnv/cvir_genome/Oyster_intron_Merged.bed -wo -f 1 > /data3/schwartzlab/tejashree/oyster_cnv/dups/filtration/dup_intron_full_overlap.bed
+
+bedtools intersect -a /data3/schwartzlab/tejashree/oyster_cnv/dups/filtration/cvir_filtered_dups.bed -b /data3/schwartzlab/tejashree/oyster_cnv/cvir_genome/Oyster_intron_Merged.bed -wo > /data3/schwartzlab/tejashree/oyster_cnv/dups/filtration/dup_intron_overlap.bed
+
+#bedtools intersect -a /data3/schwartzlab/tejashree/oyster_cnv/dups/filtration/cvir_filtered_dups.bed -b /data3/schwartzlab/tejashree/oyster_cnv/cvir_genome/Oyster_intergenic_Merged.bed -wo -f 1 > /data3/schwartzlab/tejashree/oyster_cnv/dups/filtration/dup_intergenic_full_overlap.bed
+
+bedtools intersect -a /data3/schwartzlab/tejashree/oyster_cnv/dups/filtration/cvir_filtered_dups.bed -b /data3/schwartzlab/tejashree/oyster_cnv/cvir_genome/Oyster_intergenic_Merged.bed -wo  > /data3/schwartzlab/tejashree/oyster_cnv/dups/filtration/dup_intergenic_overlap.bed
 
 #echo "Outfile made ${outfile}"
 echo "STOP" $(date)

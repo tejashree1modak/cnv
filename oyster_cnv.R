@@ -11,6 +11,7 @@ library(ggplot2)
 #library(plyr)
 #library(dplyr)
 library(scales)
+library(gridExtra)
 
 #Labels, colors and shapes for consistent plotting 
 labels = c("CL"="LA-HSCL","CLP"="CB-LSCP","CS"="DB-HSCS","DEBY"="CB-DEBY","HC"="DB-LSHC",
@@ -44,7 +45,7 @@ oysterdup <- read.table("/Users/tejashree/Documents/Projects/cnv/delly/oysterdup
 oysterdup$l <- oysterdup$V3 - oysterdup$V2 
 ggplot(oysterdup, aes(l))+geom_histogram(binwidth = 60,fill="steelblue")+ylim(c(0,100))+
   xlim(c(0,10000)) + labs(x="Length of duplications", y="Frequency") + theme_classic() +
-  theme(axis.text.x  = element_text(size=18), axis.text.y  = element_text(size=18), axis.title.x  = element_text(face = "bold", size=20), axis.title.y  = element_text(face = "bold", size=20)) 
+  theme(axis.text.x  = element_text(size=12), axis.text.y  = element_text(size=12), axis.title.x  = element_text(face = "bold", size=12), axis.title.y  = element_text(face = "bold", size=12)) 
   
 
 #all vcf data for each individual for each duplication
@@ -64,7 +65,7 @@ header <- strsplit("CHROM POS ID      REF     ALT     QUAL    FILTER
                    UMFS_5  UMFS_6", "\\s+")[[1]]
 colnames(oysterdup2)<-header
 oysterdup3 <-dplyr::filter(oysterdup2,FILTER=="PASS")
-oysterdup3$end <- str_split(oysterdup3$INFO, ';') %>%
+oysterdup3$end <- str_split(oysterdup3$INFO, ';') %>%         
   map_chr(5) %>% str_split('=') %>% map_chr(2) %>% as.integer()
 oysterdup3$length <- oysterdup3$end - oysterdup3$POS #Smallest is 160bp and largest is 999,122bp
 filter(oysterdup3, length > 1000) %>% nrow() #6551 So if we filter the dups based on len 
@@ -384,11 +385,14 @@ common_filter_dups <-
 #ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/002/022/765/GCA_002022765.4_C_virginica-3.0
 #The file is GCA_002022765.4_C_virginica-3.0_rm.out.gz
 #Repeat locations in the C.vir genome as shown by repeat masker out file
+#Input file generated from NCBI as preprocessed to make a bedfile of repeats as follows:
+# awk -v OFS='\t' '{print $6, $7}' GCA_002022765.4_C_virginica-3.0_rm.out > Cvir_genome_repeats.txt
 #only start and stop pulled out of output
 repeats <- read.table("/Users/tejashree/Documents/Projects/cnv/genome/repeat_masker/Cvir_genome_repeats.txt", 
                       sep="\t" , header = TRUE, skip = 1, stringsAsFactors = FALSE)
 repeats$len <- repeats$end - repeats$begin
 #A bedfile of repeats was made (Cvir_genome_repeats.bed)
+# awk -v OFS='\t' 'NR>3{print $5,$6,$7,$5"_"$7}' GCA_002022765.4_C_virginica-3.0_rm.out >  Cvir_genome_repeats.bed
 #The repeat output has different chromosome numbers so the file was edited to match names (eg. NC_035789.1) (Cvir_genome_repeats_mod.bed)
 #To get overlaps of dups and repeats bedtools.sh was used.
 #Output file was cleaned up to remove CHROM column that was present twice 
@@ -436,7 +440,7 @@ semi_join(cvir_dup_bed, pop_shared_fil) %>%
   write.table("/Users/tejashree/Documents/Projects/cnv/scripts/output_files/oyster_cnv/cvir_filtered_fully_shared_dups.bed", append = FALSE, sep = "\t",quote = FALSE,
               row.names = F, col.names = FALSE)
 
-##Repeat analysis post filteration##
+##Repeat the analysis post filteration##
 #Total length of dups/length of genome
 #In order to get total length of genome covered by duplications 
 #I merged the duplications to avoid counting overlapping dups multiple times
@@ -497,6 +501,8 @@ binaries <- pops %>%
 names(binaries) <- pops
 # have a look at the data
 head(binaries)  
+# how many duplications are present in more than 3 locations
+filter(binaries,rowSums(binaries)>3) %>% nrow() #6769 ie 6%
 # plot the sets with UpSetR
 library(UpSetR)
 upset(binaries, nsets = length(pops), main.bar.color = "SteelBlue", sets.bar.color = "DarkCyan", 
@@ -611,6 +617,13 @@ pop_alts_per_chrom_fil$pop <- factor (as.character(pop_alts_per_chrom_fil$pop),
                                   levels=c("HI","SM","CS","HC","HCVA","CLP","CL","SL","LM","UMFS","NEH","HG","NG","DEBY","LOLA","OBOYS2"))
 ggplot(pop_alts_per_chrom_fil, aes(x=CHROM,y=num_alts, color=pop)) + geom_bar(stat = "identity", fill="white") + 
   labs(x="Chromosome Number", y="Frequency of CNVs", title ="Post filteration") + scale_color_manual(values=values,labels=labels)
+# ANOVA for frequency of CNVs per chromosome
+res_aov <- aov(num_alts ~ CHROM, data = pop_alts_per_chrom_fil)
+summary(res_aov)
+res_tuk <- TukeyHSD(res_aov)
+#shows chr5 has significantly higher freq of cnv than any other chr
+res_tuk_df <- as.data.frame(res_tuk$CHROM) 
+
 # normalized by chromosome size
 chrom_len <- data.frame(CHROM=c("NC_035780.1","NC_035781.1","NC_035782.1","NC_035783.1","NC_035784.1","NC_035785.1",
                                 "NC_035786.1", "NC_035787.1","NC_035788.1","NC_035789.1"), 
@@ -628,7 +641,40 @@ ggplot(pop_alts_per_chrom_len_fil, aes(x=CHROM,y=(num_alts/len))) + geom_bar(sta
   theme(axis.text.x  = element_text(size=18), axis.text.y  = element_text(size=18), axis.title.x  = element_text(face = "bold", size=20), axis.title.y  = element_text(face = "bold", size=20)) + 
   scale_x_discrete(labels=c("NC_035780.1"= "1","NC_035781.1"="2","NC_035782.1"="3","NC_035783.1"="4","NC_035784.1"="5","NC_035785.1"="6",
                             "NC_035786.1"="7", "NC_035787.1"="8","NC_035788.1"="9","NC_035789.1"="10"))
-                                                                                                                                                                                                                                           
+# Fig 2 from paper: Frequency of duplications per chromosome across locations normalized by chromosome length
+freq_cnv <- pop_alts_per_chrom_len_fil %>% mutate(cnv_freq_norm = (num_alts/len)) %>% select(pop, CHROM, cnv_freq_norm)
+is_outlier <- function(x) {
+  return(x < quantile(x, 0.25) - 1.5 * IQR(x) | x > quantile(x, 0.75) + 1.5 * IQR(x))
+}
+freq_cnv2 <- freq_cnv %>% group_by(CHROM) %>% 
+  mutate(outlier = ifelse(is_outlier(cnv_freq_norm), cnv_freq_norm, as.numeric(NA))) 
+freq_cnv2$pop[which(is.na(freq_cnv2$outlier))] <- as.numeric(NA)
+freq_cnv2 <- freq_cnv2 %>%
+  mutate(inbred_st = case_when(pop == 'HG' ~ 'inbred',
+                               pop == 'NG' ~ 'inbred',
+                               pop == 'CL' ~ 'nt_inbred',
+                               pop == 'NEH' ~ 'nt_inbred',
+                               pop == 'LM' ~ 'nt_inbred',
+                               pop == 'OBOYS2' ~ 'nt_inbred',
+                               pop == 'SL' ~ 'nt_inbred'))
+freq_cnv2$inbred_st <- as.factor(freq_cnv2$inbred_st)
+freq_cnv3 <- freq_cnv2 %>% 
+  mutate(outlier_inbred = case_when(inbred_st == 'inbred' ~ outlier, TRUE ~ NA_real_), 
+         outlier_nt_inbred = case_when(inbred_st == 'nt_inbred' ~ outlier, TRUE ~ NA_real_))
+ggplot(freq_cnv3, aes(x=CHROM,y=cnv_freq_norm)) + 
+  geom_boxplot(outlier.shape = NA) + 
+  geom_point(aes(x=CHROM,y=outlier_inbred), shape=17, size=1)+
+  geom_jitter(aes(x=CHROM,y=outlier_nt_inbred), shape=15, size=1)+
+  labs(x="Chromosome Number", y="Frequency of CNVs") + theme_classic() +
+  theme(axis.text.x  = element_text(size=12), axis.text.y  = element_text(size=12), 
+        axis.title.x  = element_text(face = "bold", size=16), 
+        axis.title.y  = element_text(face = "bold", size=16)) + 
+  scale_x_discrete(labels=c("NC_035780.1"= "1","NC_035781.1"="2","NC_035782.1"="3","NC_035783.1"="4",
+                            "NC_035784.1"="5","NC_035785.1"="6", "NC_035786.1"="7", "NC_035787.1"="8",
+                            "NC_035788.1"="9","NC_035789.1"="10")) 
+ggsave(filename = "freq_per_chrom_norm_chromlen_box.png",
+       path = "/Users/tejashree/Documents/Projects/cnv/scripts/plots/post_filteration/",
+       width = 6.5, height = 6.5, units = "in")
 
 ##Copy number analysis POST FILTERATION ##
 cn_gtypes_long_fil <- anti_join(cn_gtypes_long, filter_dups)
@@ -640,6 +686,19 @@ length(unique(cn_gtypes_long_fil[["ID"]])) #11339
 min(cn_gtypes_long_fil[,5], na.rm=T) #-1
 max(cn_gtypes_long_fil[,5], na.rm=T) #20025
 hist(cn_gtypes_long_fil$cn)
+
+##Comparison of cn within locations ##
+mean_cn_per_pop <- cn_gtypes_long_fil %>% select(ID,cn,pop) %>% group_by(pop) %>% summarise(mean_cn = mean(cn), sd = sd(cn))
+mean_cn_per_pop <- mean_cn_per_pop %>% arrange(desc(sd))
+colnames(mean_cn_per_pop) <- c('Location', 'Average copy number', 'Std Dev')
+grid.table(mean_cn_per_pop)
+mean_cn_per_pop$Location <- factor (as.character(mean_cn_per_pop$Location), 
+                                   levels=c("SL","CLP","HC","HCVA","LOLA","OBOYS2","LM","SM","CS","UMFS","CL","DEBY","NEH","HI","NG","HG"))
+ggplot(data=mean_cn_per_pop,aes(x=Location)) + 
+  geom_errorbar(aes(ymax = mean_cn_per_pop$`Average copy number` + mean_cn_per_pop$`Std Dev`, ymin = mean_cn_per_pop$`Average copy number` - mean_cn_per_pop$`Std Dev`),position = "dodge", color = "blue", width = 0.5) + 
+  geom_point(data=mean_cn_per_pop,y=mean_cn_per_pop$`Average copy number`) + labs(y = "Average Copy Number") + theme_gray()
+ggsave("Mean_cn_per_pop.jpeg",width = 8, height = 5)
+
 #change the sample names and order the levels 
 #cn on chr1 POST FILTERATION #
 cn_gtypes_long_chr1_fil <- filter(cn_gtypes_long_fil, CHROM == "NC_035780.1") %>% select(POS, sample, cn) 
@@ -742,6 +801,17 @@ ggplot(data=df2, aes(x=species, y=percent_dups)) +
   theme(axis.text.x  = element_text(face = "italic",size=18), axis.text.y  = element_text(size=18), axis.title.x  = element_text(face = "bold", size=20), axis.title.y  = element_text(face = "bold", size=20)) +
   scale_x_discrete(limits=c("Atlantic killifish", "Stickleback","Humans", "Eastern oyster"))
 
+#Plot for %dups overlapping genomic features
+genome_feat <- data.frame(genome_feat=c("Gene", "Intergenic", "Intron", "Exon"),
+                          percent_dups=c(38.8, 29.4, 21.4, 2.7))
+ggplot(data=genome_feat, aes(x=genome_feat, y=percent_dups)) +
+  geom_bar(stat="identity",fill="black",width=0.5) + labs(y="% Duplications completely \n within a genomic feature", x="Genomic feature") + ylim(0,50) +
+  geom_text(aes(label=percent_dups), vjust=-0.3, size=6) +
+  theme_classic() +
+  theme(axis.text.x  = element_text(face = "italic",size=12), axis.text.y  = element_text(size=12), axis.title.x  = element_text(face = "bold", size=12), axis.title.y  = element_text(face = "bold", size=12)) +
+  scale_x_discrete(limits=c("Gene", "Intergenic", "Intron", "Exon"))
+
+
 ###### ANALYSIS POST ANNOTATION #######
 # Annotating dups 
 # Read in annotations from ref genome
@@ -751,15 +821,20 @@ colnames(ref_annot) <- c("LOC", "annot")
 # Read in bed file of dups mapped to LOCs from ref genome
 map_dup <- read.table("/Users/tejashree/Documents/Projects/cnv/annot/Oyster_Dup_gene", sep="\t" , stringsAsFactors = FALSE)
 colnames(map_dup) <- c("ID", "LOC")
-dup_annot <- left_join(map_dup, ref_annot, by = "LOC") 
-dup_annot %>% group_by(annot) %>% summarize(count=n()) # There are 593 with no annotation
+# Keep those duplications that passed the filter
+map_dup_fil <- map_dup %>% filter(map_dup$ID %in% oysterdup3_fil$ID)
+dup_annot_fil <- left_join(map_dup_fil, ref_annot, by = "LOC") 
+# **from original dups without filtering**
+dup_annot <- left_join(map_dup, ref_annot, by = "LOC")
+# **Continue with filtered dups to get right GO and KEGG mapping
+dup_annot_fil %>% group_by(annot) %>% summarize(count=n()) # There are 593 with no annotation
 #The proportion shows that highest dups mapped on chr5 and lowest on chr10. Need to see what are the annot for those dups.
 #chrom_pos_id <- 
-dup_annot_chr5 <- oysterdup3 %>% select(CHROM,POS,ID) %>% left_join(dup_annot, by='ID') %>% 
+dup_annot_chr5 <- oysterdup3_fil %>% select(CHROM,POS,ID) %>% left_join(dup_annot_fil, by='ID') %>% 
   filter(CHROM=="NC_035784.1") %>% filter(!is.na(LOC)) %>% filter(!is.na(annot)) %>% 
   filter(!grepl("uncharacterized",annot))
 #lectins
-dup_annot_chr10 <- oysterdup3 %>% select(CHROM,POS,ID) %>% left_join(dup_annot, by='ID') %>% 
+dup_annot_chr10 <- oysterdup3_fil %>% select(CHROM,POS,ID) %>% left_join(dup_annot_fil, by='ID') %>% 
   filter(CHROM=="NC_035789.1") %>% filter(!is.na(LOC)) %>% filter(!is.na(annot)) %>% 
   filter(!grepl("uncharacterized",annot))
 #toll-like receptors
@@ -770,22 +845,24 @@ dup_annot_chr10 <- oysterdup3 %>% select(CHROM,POS,ID) %>% left_join(dup_annot, 
 ref_annot_prot <- read.table("/Users/tejashree/Documents/Projects/cnv/annot/ref_annot_prot", 
                         sep="\t" , quote="", fill=FALSE, stringsAsFactors = FALSE)
 colnames(ref_annot_prot) <- c("LOC", "Sequence_name")
-#Join this with DUP_IDs (map_dup has DUP_ID and LOC)
+#Join this with DUP_IDs (map_dup has DUP_ID and LOC) **original with no filtering**
 dup_loc_xp <- left_join(map_dup, ref_annot_prot, by="LOC") 
+# with FILTERED dups
+dup_loc_xp_fil <- left_join(map_dup_fil, ref_annot_prot, by="LOC")
 #Join that with XP_sequences_Cvirginica_GCF_002022765.2_GO.tab by XP 
 ref_annot_go_kegg <- read.table("/Users/tejashree/Documents/Projects/oyster/exp_data/Spring2016/genome/XP_sequences_Cvirginica_GCF_002022765.2_GO.tab", 
                              sep="\t" , quote="", fill=FALSE, stringsAsFactors = FALSE, header = TRUE)
 colnames(ref_annot_go_kegg) <- c("Sequence_name","Sequence_length","Sequence_description","GO_ID","Enzyme_code","Enzyme_name")
-left_join(dup_loc_xp, ref_annot_go_kegg, by="Sequence_name") %>% head()
+left_join(dup_loc_xp_fil, ref_annot_go_kegg, by="Sequence_name") %>% head()
 #What % LOCs are mapped to kegg
 ref_annot_go_kegg %>% filter(!is.na(Enzyme_name)) %>% filter(Enzyme_name != "") %>% nrow() #10.4 % (100*6273)/60213
 ref_annot_go_kegg %>% filter(!is.na(GO_ID)) %>% filter(GO_ID != "") %>% nrow() #58.2% (100*35081)/30213
 
-#Extract DUP_IDs, GO_IDs
-dup_go <- left_join(dup_loc_xp, ref_annot_go_kegg, by="Sequence_name") %>% select(ID, GO_ID) %>% unique() 
+#Extract DUP_IDs, GO_IDs *with FILTERED dups**
+dup_go <- left_join(dup_loc_xp_fil, ref_annot_go_kegg, by="Sequence_name") %>% select(ID, GO_ID) %>% unique() 
 #  separate(GO_ID, sep = ";", into = paste("V", 1:13, sep = "_")) 
 #What % dups mapped to GO terms
-dup_go %>% filter(!is.na(GO_ID)) %>% filter(GO_ID != "") %>% nrow() # 62% (8300*100)/13387
+dup_go %>% filter(!is.na(GO_ID)) %>% filter(GO_ID != "") %>% nrow() # 63% (7184*100)/11339
 dup_go %>% filter(!is.na(GO_ID)) %>% filter(GO_ID != "") %>% 
   write.table("/Users/tejashree/Documents/Projects/cnv/scripts/output_files/oyster_cnv/dup_go.txt", append = FALSE, sep = " ",quote = FALSE,
                                                                          row.names = F, col.names = FALSE)
@@ -798,15 +875,29 @@ write.table(go_vector_sorted, "/Users/tejashree/Documents/Projects/cnv/delly/go_
 write.table(go_vector_sorted$Var1, "/Users/tejashree/Documents/Projects/cnv/delly/go_only.txt", append = FALSE, sep = ",",quote = FALSE,
             row.names = F, col.names = FALSE)
 #Highest freq: molecular funtion, ion binding, cellular component, signal transduction, cellular protein modification process
-#Extract DUP_IDs, EC#s :pathway mapping 
-dup_kegg <- left_join(dup_loc_xp, ref_annot_go_kegg, by="Sequence_name") %>% select(ID, Enzyme_name) %>% unique() 
+
+#Extract DUP_IDs, EC#s :pathway mapping *with FILTERED dups**
+dup_kegg <- left_join(dup_loc_xp_fil, ref_annot_go_kegg, by="Sequence_name") %>% select(ID, Enzyme_code, Enzyme_name) %>% unique() 
 #What % dups mapped to an EC number via kegg
-dup_kegg %>% filter(!is.na(Enzyme_name)) %>% filter(Enzyme_name != "") %>% nrow() # 11% (1420*100)/13387
+dup_kegg %>% filter(!is.na(Enzyme_name)) %>% filter(Enzyme_name != "") %>% nrow() # 10.78% (1230*100)/11339
 #separate the enzyme names and get count for each
 kegg_vector <- as.data.frame(table(unlist(strsplit(as.character(dup_kegg$Enzyme_name), ";"))))
+colnames(kegg_vector) <- c("Enzyme_name", "Freq")
+kegg_vector_sorted <-  kegg_vector[order(kegg_vector$Freq, decreasing=TRUE),] 
 #Highest:Nucleoside-triphosphate phosphatase,Acting on peptide bonds (peptidases),Protein-serine/threonine phosphatase,
 #Protein-tyrosine-phosphatase,Adenosinetriphosphatase
+#make a csv file for paper
+write.table(kegg_vector_sorted, "/Users/tejashree/Documents/Projects/cnv/scripts/output_files/oyster_cnv/kegg_vector_sorted.csv", append = FALSE, sep = ",",quote = FALSE,
+            row.names = F, col.names = TRUE)
+#Enzyme code count
+kegg_code_vector <- as.data.frame(table(unlist(strsplit(as.character(dup_kegg$Enzyme_code), ";"))))
+colnames(kegg_code_vector) <- c("Enzyme_code", "Freq")
+kegg_code_vector <-  kegg_code_vector[order(kegg_code_vector$Freq, decreasing=TRUE),] 
 
+dplyr::filter(dup_kegg, grepl('Nucleoside-triphosphate phosphatase', Enzyme_name)) %>% select('ID') %>% 
+  unique() %>% tally() #252
+
+##########################################################
 ##DO dups exist in expanded gene families?
 ##Pull out dups that are annotated as the gene members that we know belong to expanded families
 dplyr::filter(dup_annot, grepl('interferon-induced protein 44', annot)) %>% select('ID') %>% unique() %>% tally() #15
@@ -836,13 +927,37 @@ left_join(ifi44_ID,oysterdup3) %>% select(CHROM, POS, end, ID) %>%
               row.names = F, col.names = FALSE)
 #The DUPs are on 3 diff chromosomes 1,8 and 9. The ref genome has 33 genes (unique LOCs annotated as IFI44) and are present on the same 3 chromosomes
 #Dups and exons mapped on ref genome using script density_plot.R shows that some dups are overlapping, some span the exon some dont, 
-#dups are present in 3 of the 4 regions where IFI44 exons are mapped. 
+#dups are present in 3 of the 4 regions where IFI44 exons are mapped.
+# I get the LOCs mapped to each IFI44 gene from ref_annot
+ifi44_genes <- dplyr::filter(ref_annot, grepl('interferon-induced protein 44', annot)) %>% select('LOC') %>% unique()
+## The following two lines are present in the GIMAP section so when you rerun this code you can either run the lines here 
+#or in the GIMAP section and bed files can be created then.
+#oyster_genes <- read.table("/Users/tejashree/Documents/Projects/cnv/annot/Oyster_gene.bed",stringsAsFactors = FALSE)
+#colnames(oyster_genes)  <- c("CHROM", "POS","end", "LOC")
+ifi44_genes_bed <- semi_join(oyster_genes,ifi44_genes)
+ifi44_genes_bed2 <- semi_join(oyster_genes,ifi44_genes) 
+ifi44_genes_bed2$len <- ifi44_genes_bed2$end - ifi44_genes_bed2$POS
+ifi44_genes_bed2_chr1 <- ifi44_genes_bed2 %>% filter(CHROM == "NC_035780.1")
+## POST FILTERATION## 
+ifi44_sub_fil <- anti_join(ifi44_sub, filter_dups) #no change post filteration
+#using ifi44_sub_fil for next steps for consistency with GIMAP and to remember that there was no change. 
+#plotting but removing an outlier that had a very high copy number by setting xlim
+left_join(ifi44_sub_fil,cn) %>% ggplot(aes(cn,pop, color =pop, shape=pop, label=pop)) + facet_wrap(~ID) + geom_jitter() + xlim(c(0,15)) + #removing outlier 
+  scale_color_manual(values=values,labels=labels) + 
+  scale_shape_manual(values=shapes,labels=labels) + scale_y_discrete(labels=labels)
+#Creating an dataframe with all the info for gimap dups
+ifi44_dup_fil <- left_join(ifi44_sub_fil,cvir_filtered_dup_bed, by = "ID") %>% left_join(cn) #Joining, by = c("ID", "sample", "pop") the second time
+#Confirm number of dups .. yes still 15. 
+length(unique(ifi44_dup_fil$ID))
+length(unique(ifi44_dup_fil$CHROM)) #on 3 chromosomes
+
 
 #GIMAP genes
+# 55 GIMAP genes (wc -l LOC) in the reference genome. Members include 4,7 and 8 and their multiple isoforms. LOCs overlap.
 dplyr::filter(dup_annot, grepl('GTPase IMAP family member', annot)) %>% select('ID') %>% unique() %>% tally() #23 multiple members 4,7,8
-dplyr::filter(dup_annot, grepl('GTPase IMAP family member 4', annot)) %>% select('ID') %>% unique() %>% tally() #21
-dplyr::filter(dup_annot, grepl('GTPase IMAP family member 7', annot)) %>% select('ID') %>% unique() %>% tally() #9
-dplyr::filter(dup_annot, grepl('GTPase IMAP family member 8', annot)) %>% select('ID') %>% unique() %>% tally() #5
+dplyr::filter(dup_annot, grepl('GTPase IMAP family member 4', annot)) %>% select('ID') %>% unique() %>% tally() #21 #19 post filtration
+dplyr::filter(dup_annot, grepl('GTPase IMAP family member 7', annot)) %>% select('ID') %>% unique() %>% tally() #9  #8 post filtration
+dplyr::filter(dup_annot, grepl('GTPase IMAP family member 8', annot)) %>% select('ID') %>% unique() %>% tally() #5  #4 post filtration
 #The individual tally doesnt add up because for some DUPs they are mapped to multiple LOCs
 dplyr::filter(dup_annot, grepl('scavenger receptor', annot)) %>% select('ID') %>% unique() %>% tally() #37 (multiple types/classes)
 #now find out how many of these dups are present in each population
@@ -900,9 +1015,30 @@ gimap_sub_fil <- gimap_sub %>% filter(ID != 'DUP00223590' & ID != 'DUP01190157')
 left_join(gimap_sub_fil,cn) %>% ggplot(aes(cn,pop, color =pop, shape=pop, label=pop)) + facet_wrap(~ID) + geom_jitter() + 
   scale_color_manual(values=values,labels=labels) + 
   scale_shape_manual(values=shapes,labels=labels) + scale_y_discrete(labels=labels)
+#Creating an dataframe with all the info for gimap dups
+gimap_dup_fil <- left_join(gimap_sub_fil,cvir_filtered_dup_bed, by = "ID") %>% left_join(cn) #Joining, by = c("ID", "sample", "pop") the second time
+#Add info about annot
+gimap_4_dup_fil <- dplyr::filter(dup_annot, grepl('GTPase IMAP family member 4', annot)) %>% 
+                    select('ID') %>% unique() %>% filter(ID != 'DUP00223590' & ID != 'DUP01190157')
+gimap_7_dup_fil <- dplyr::filter(dup_annot, grepl('GTPase IMAP family member 7', annot)) %>% 
+  select('ID') %>% unique() %>% filter(ID != 'DUP00223590' & ID != 'DUP01190157')
+gimap_8_dup_fil <- dplyr::filter(dup_annot, grepl('GTPase IMAP family member 8', annot)) %>% 
+  select('ID') %>% unique() %>% filter(ID != 'DUP00223590' & ID != 'DUP01190157')
+gimap_dup_fil <-  gimap_dup_fil  %>% mutate(gimap4 = ifelse(ID %in% gimap_4_dup_fil$ID,1,0)) 
+gimap_dup_fil <-  gimap_dup_fil  %>% mutate(gimap7 = ifelse(ID %in% gimap_7_dup_fil$ID,1,0))
+gimap_dup_fil <-  gimap_dup_fil  %>% mutate(gimap8 = ifelse(ID %in% gimap_8_dup_fil$ID,1,0)) 
+#Confirm number of dups .. yes still 21. 
+length(unique(gimap_dup_fil$ID))
+length(unique(gimap_dup_fil$CHROM)) #on 5 chromosomes
 
+## Are there dups in housekeeping genes? *using FILTERED DUPS by using cn_gtypes_long_fil **
+dplyr::filter(dup_annot, grepl('elongation factor 1', annot)) %>% left_join(cn_gtypes_long_fil,by="ID") %>% filter(cn>0) %>% View() #4dups!
+dplyr::filter(dup_annot, grepl('glyceraldehyde-3-phosphate dehydrogenase', annot)) %>% left_join(cn_gtypes_long_fil,by="ID") %>% View() #0 dups map to GAPDH
+dplyr::filter(dup_annot, grepl('actin-like', annot, fixed = TRUE)) %>% View() # 3 dups DUP00222888,DUP00223139,DUP00223228 and other actins NOT beta-actin specifically 
+dplyr::filter(dup_annot, grepl('actin-like', annot, fixed = TRUE)) %>% 
+  left_join(cn_gtypes_long_fil,by="ID") %>% filter(cn>0) %>% filter(ID == 'DUP00222888'| ID =='DUP00223139'| ID =='DUP00223228') %>% View()
 ## pulling out dups mapped to histone genes
-dplyr::filter(dup_annot, grepl('histone', annot)) %>% left_join(cn_gtypes_long,by="ID") %>% View()
+dplyr::filter(dup_annot, grepl('histone', annot)) %>% left_join(cn_gtypes_long_fil,by="ID") %>% View()
 
 
 ### Duplications and expanded family mapping ###
@@ -941,6 +1077,128 @@ left_join(ref_annot, ref_annot_prot) %>% filter(grepl('GTPase IMAP family member
   select('Sequence_name') %>% distinct() %>% semi_join(tmp2) #GIMAPs seem to be absent from the CAFE output both shared and unique!
 #Once this mystery is solved I can make a table of how many duplications mapped to these expanded genes of interest.
 #Also have to think about how much overlap should be used as a cutoff  
+
+### Multigenerational and individual variation in expanded families ###
+#GIMAP multigenerational variation
+left_join(gimap_sub_fil,cn) %>% filter(pop =="HG" | pop =="NG") %>% 
+  ggplot(aes(cn,sample, color = pop, shape=pop, label= sample)) + facet_wrap(~ID) + geom_point() + 
+  #scale_color_manual(values=values,labels=labels) + 
+  scale_shape_manual(values=shapes) + scale_y_discrete(labels=labels)
+#GIMAP individual variation
+left_join(gimap_sub_fil,cn) %>%  
+  ggplot(aes(ID,sample, color = pop, label= sample, size = cn)) + geom_jitter(width = 0.2) +
+  #scale_color_manual(values=values,labels=labels) + 
+  #scale_shape_manual(values=shapes,labels=labels) + 
+  scale_y_discrete(labels=labels) + 
+  theme(panel.background = element_rect(fill = "white"),
+        panel.grid.minor.y=element_blank(),
+        panel.grid.major.y=element_blank(),panel.grid.major.x = element_line(size = 0.25, linetype = 'solid',
+                                                                             colour = "black")) +
+  theme(axis.text.x =element_text(angle = 90, hjust = 1) , axis.text.y = element_text(size = rel(0.7), face = "bold")) 
+  #facet_wrap(~ID, nrow = 1)
+#including genome positions
+cn_gtypes_long_chr9_fil <- filter(cn_gtypes_long_fil, CHROM == "NC_035788.1") %>% select(POS, sample, cn) 
+#chr2
+gimap_dup_fil_chr2 <- filter(gimap_dup_fil, CHROM == "NC_035781.1")
+gimap_dup_fil_chr2 <- as.numeric(as.character(gimap_dup_fil$cn))
+gimap_cn_chr2_hmap_fil <- ggplot(data = gimap_dup_fil_chr2, mapping = aes(x = POS,y = sample,color = cn, shape = ID)) + 
+  geom_point(size = 3) + xlab(label = "Position")+ggtitle(label = "Chr 2") + 
+  scale_shape_manual(values=c(15, 16, 17, 18)) +
+  scale_color_viridis_c(option = "C", direction = -1,limits = c(0, 10))
+gimap_cn_chr2_hmap_fil 
+gimap_dup_fil_chr2 %>% ggplot() + geom_segment(aes(x = POS, y = sample, xend = end, yend = sample,color = cn)) + 
+  facet_wrap(~ ID, nrow = 1)
+#chr6
+gimap_dup_fil_chr6 <- filter(gimap_dup_fil, CHROM == "NC_035785.1")
+gimap_cn_chr6_hmap_fil <- ggplot(data = gimap_dup_fil_chr6, mapping = aes(x = POS,y = sample,color = cn, shape = ID)) + 
+  geom_point(size = 3) + xlab(label = "Position")+ggtitle(label = "Chr 6") + 
+  scale_shape_manual(values=c(15, 16, 17, 18)) +
+  scale_color_viridis_c(option = "C", direction = -1,limits = c(0, 10))
+gimap_cn_chr6_hmap_fil
+gimap_dup_fil_chr6 %>% ggplot() + geom_segment(aes(x = POS, y = sample, xend = end, yend = sample,color = cn)) + 
+  facet_wrap(~ ID, nrow = 1)
+#chr7
+gimap_dup_fil_chr7 <- filter(gimap_dup_fil, CHROM == "NC_035786.1")
+gimap_cn_chr7_hmap_fil <- ggplot(data = gimap_dup_fil_chr7, mapping = aes(x = POS,y = sample,color = cn, shape = ID)) + 
+  geom_point(size = 3) + xlab(label = "Position")+ggtitle(label = "Chr 7") + 
+  scale_shape_manual(values=c(15, 16, 17, 18, 0, 1,2)) +
+  scale_color_viridis_c(option = "C", direction = -1,limits = c(0, 10))
+gimap_cn_chr7_hmap_fil
+gimap_dup_fil_chr7 %>% ggplot() + geom_segment(aes(x = POS, y = sample, xend = end, yend = sample,color = cn)) + 
+  facet_wrap(~ ID, nrow = 1)
+#chr8
+gimap_dup_fil_chr8 <- filter(gimap_dup_fil, CHROM == "NC_035787.1")
+gimap_cn_chr8_hmap_fil <- ggplot(data = gimap_dup_fil_chr8, mapping = aes(x = POS,y = sample,color = cn, shape = ID)) + 
+  geom_point(size = 3) + xlab(label = "Position")+ggtitle(label = "Chr 8") + 
+  scale_shape_manual(values=c(15, 16, 17, 18, 0, 1,2)) +
+  scale_color_viridis_c(option = "C", direction = -1,limits = c(0, 10))
+gimap_cn_chr8_hmap_fil
+gimap_dup_fil_chr8 %>% ggplot() + geom_segment(aes(x = POS, y = sample, xend = end, yend = sample,color = cn)) + 
+  facet_wrap(~ ID, nrow = 1) #not useful because dup len is small to be seen
+#chr9
+gimap_dup_fil_chr9 <- filter(gimap_dup_fil, CHROM == "NC_035788.1")
+gimap_cn_chr9_hmap_fil <- ggplot(data = gimap_dup_fil_chr9, mapping = aes(x = POS,y = sample,color = cn, shape = ID)) + 
+  geom_point(size = 3) + xlab(label = "Position")+ggtitle(label = "Chr 9") + 
+  scale_shape_manual(values=c(15, 16, 17, 18, 0, 1,2)) +
+  scale_color_viridis_c(option = "C", direction = -1,limits = c(0, 10))
+gimap_cn_chr9_hmap_fil
+gimap_dup_fil_chr9 %>% ggplot() + geom_segment(aes(x = POS, y = sample, xend = end, yend = sample,color = cn)) + 
+  facet_wrap(~ ID, nrow = 1) #not useful because dup len is small to be seen
+
+#Plotting gimap genes and dups on same plot
+ggplot() + 
+  geom_segment(data=gimap_dup_fil, aes(x=POS, y=ID,xend = end, yend = ID), color='green') + 
+  geom_segment(data=gimap_genes_bed, aes(x=POS, y=LOC, xend = end, yend = LOC), color='red') + facet_wrap(~ CHROM)
+
+#IFI44 multigenerational variation
+left_join(ifi44_sub_fil,cn) %>% filter(pop =="HG" | pop =="NG") %>% 
+  ggplot(aes(cn,sample, color = pop, shape=pop, label= sample)) + facet_wrap(~ID) + geom_point() + 
+  #scale_color_manual(values=values,labels=labels) + 
+  scale_shape_manual(values=shapes) + scale_y_discrete(labels=labels)
+#IFI44 individual variation
+#LM_3 has 88 copies for DUP01184035 so if we remove that outlier to look at the rest of the data
+left_join(ifi44_sub_fil,cn) %>% filter(ID != "DUP01184035") %>%
+  ggplot(aes(ID,sample, color = log(cn), label= sample, size = cn)) + geom_jitter(width = 0.2) + 
+  scale_color_viridis_c(option = "C", direction = -1) +
+  scale_y_discrete(labels=labels) + 
+  #theme_dark() +
+  theme(panel.background = element_rect(fill = "#a9a9a9", colour = "#020202",
+                                        size = 2, linetype = "solid"),
+        panel.grid.minor.y=element_blank(),
+        panel.grid.major.y=element_blank(),panel.grid.major.x = element_line(size = 0.5, linetype = 'solid',
+                                                                             colour = "white")) +
+  # theme(panel.background = element_rect(fill = "#BFD5E3", colour = "#6D9EC1",
+  #                                       size = 2, linetype = "solid"),
+  #       panel.grid.minor.y=element_blank(),
+  #       panel.grid.major.y=element_blank()) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5), axis.text.y = element_text(size = rel(0.7), face = "bold"))
+#including genome positions
+#chr1
+ifi44_dup_fil_chr1 <- filter(ifi44_dup_fil, CHROM == "NC_035780.1")
+ifi44_cn_chr1_hmap_fil <- ggplot(data = ifi44_dup_fil_chr1, mapping = aes(x = POS,y = sample,color = cn, shape = ID)) + 
+  geom_point(size = 3) + xlab(label = "Position")+ggtitle(label = "Chr1") + 
+  scale_shape_manual(values=c(15, 16, 17, 18)) +
+  scale_color_viridis_c(option = "C", direction = -1,limits = c(0, 10)) + 
+  geom_segment(aes(x = POS, y = sample, xend = end, yend = sample,color = cn))
+ifi44_cn_chr1_hmap_fil 
+ifi44_dup_fil_chr1 %>% ggplot() + geom_segment(aes(x = POS, y = sample, xend = end, yend = sample,color = cn)) + 
+  facet_wrap(~ ID, nrow = 1)
+#chr6
+ifi44_dup_fil_chr6 <- filter(ifi44_dup_fil, CHROM == "NC_035787.1")
+ifi44_cn_chr6_hmap_fil <- ggplot(data = ifi44_dup_fil_chr6, mapping = aes(x = POS,y = sample,color = cn, shape = ID)) + 
+  geom_point(size = 3) + xlab(label = "Position")+ggtitle(label = "Chr6") + 
+  scale_shape_manual(values=c(15, 16, 17, 18,0,1,2,5,7,9)) +
+  scale_color_viridis_c(option = "C", direction = -1,limits = c(0, 10)) + theme(axis.text.y = element_text(size= 6)) +
+  geom_segment(aes(x = POS, y = sample, xend = end, yend = sample,color = cn)) + facet_wrap(~ID)
+ifi44_cn_chr6_hmap_fil
+#chr7
+ifi44_dup_fil_chr7 <- filter(ifi44_dup_fil, CHROM == "NC_035788.1")
+ifi44_cn_chr7_hmap_fil <- ggplot(data = ifi44_dup_fil_chr7, mapping = aes(x = POS,y = sample,color = cn, shape = ID)) + 
+  geom_point(size = 3) + xlab(label = "Position")+ggtitle(label = "Chr7") + 
+  scale_shape_manual(values=c(15, 16, 17, 18,0,1,2,5,7,9)) +
+  scale_color_viridis_c(option = "C", direction = -1,limits = c(0, 10)) + 
+  geom_segment(aes(x = POS, y = sample, xend = end, yend = sample,color = cn))
+ifi44_cn_chr7_hmap_fil
 
 ###Vst calculations###
 # Vpopx is the CN variance for each respective population

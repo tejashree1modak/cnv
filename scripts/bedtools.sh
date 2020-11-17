@@ -42,11 +42,28 @@ echo "Starting bedtools intersect"
 
 #bedtools intersect -a /data3/schwartzlab/tejashree/oyster_cnv/dups/filtration/cvir_filtered_dups.bed -b /data3/schwartzlab/tejashree/oyster_cnv/cvir_genome/Oyster_intron_Merged.bed -wo -f 1 > /data3/schwartzlab/tejashree/oyster_cnv/dups/filtration/dup_intron_full_overlap.bed
 
-bedtools intersect -a /data3/schwartzlab/tejashree/oyster_cnv/dups/filtration/cvir_filtered_dups.bed -b /data3/schwartzlab/tejashree/oyster_cnv/cvir_genome/Oyster_intron_Merged.bed -wo > /data3/schwartzlab/tejashree/oyster_cnv/dups/filtration/dup_intron_overlap.bed
+#bedtools intersect -a /data3/schwartzlab/tejashree/oyster_cnv/dups/filtration/cvir_filtered_dups.bed -b /data3/schwartzlab/tejashree/oyster_cnv/cvir_genome/Oyster_intron_Merged.bed -wo > /data3/schwartzlab/tejashree/oyster_cnv/dups/filtration/dup_intron_overlap.bed
 
 #bedtools intersect -a /data3/schwartzlab/tejashree/oyster_cnv/dups/filtration/cvir_filtered_dups.bed -b /data3/schwartzlab/tejashree/oyster_cnv/cvir_genome/Oyster_intergenic_Merged.bed -wo -f 1 > /data3/schwartzlab/tejashree/oyster_cnv/dups/filtration/dup_intergenic_full_overlap.bed
 
-bedtools intersect -a /data3/schwartzlab/tejashree/oyster_cnv/dups/filtration/cvir_filtered_dups.bed -b /data3/schwartzlab/tejashree/oyster_cnv/cvir_genome/Oyster_intergenic_Merged.bed -wo  > /data3/schwartzlab/tejashree/oyster_cnv/dups/filtration/dup_intergenic_overlap.bed
+#bedtools intersect -a /data3/schwartzlab/tejashree/oyster_cnv/dups/filtration/cvir_filtered_dups.bed -b /data3/schwartzlab/tejashree/oyster_cnv/cvir_genome/Oyster_intergenic_Merged.bed -wo  > /data3/schwartzlab/tejashree/oyster_cnv/dups/filtration/dup_intergenic_overlap.bed
+
+## intersect between all dups and haplotigs
+#bedtools intersect -a /data3/schwartzlab/tejashree/oyster_cnv/dups/filtration/cvir_filtered_dups.bed -b /data3/schwartzlab/tejashree/oyster_cnv/cvir_genome/haplotigs.bed -wo  > /data3/schwartzlab/tejashree/oyster_cnv/dups/filtration/dup_haplotigs_overlap.bed
+
+## No selected lines dups merge
+#bedtools merge -i /data3/schwartzlab/tejashree/oyster_cnv/oyster_cnv_nosel/cvir_filtered_nosel_dups.bed -c 1,2,3 -o count,collapse,collapse  > /data3/schwartzlab/tejashree/oyster_cnv/oyster_cnv_nosel/cvir_filtered_nosel_dups_merged.bed
+
+## Intersect between No selected lines dups and genomic features
+# Dups commpletely in EXONS 
+bedtools intersect -a /data3/schwartzlab/tejashree/oyster_cnv/oyster_cnv_nosel/cvir_filtered_nosel_dups.bed -b /data3/schwartzlab/tejashree/oyster_cnv/cvir_genome/exon_annot.bed -wo -f 1.0 > /data3/schwartzlab/tejashree/oyster_cnv/oyster_cnv_nosel/dup_nosel_exon_full_overlap.bed
+# Dups commpletely in GENES
+bedtools intersect -a /data3/schwartzlab/tejashree/oyster_cnv/oyster_cnv_nosel/cvir_filtered_nosel_dups.bed -b /data3/schwartzlab/tejashree/oyster_cnv/cvir_genome/gene_annot.bed -wo -f 1.0 > /data3/schwartzlab/tejashree/oyster_cnv/oyster_cnv_nosel/dup_nosel_gene_full_overlap.bed
+# Dups commpletely in INTRONS 
+bedtools intersect -a /data3/schwartzlab/tejashree/oyster_cnv/oyster_cnv_nosel/cvir_filtered_nosel_dups.bed -b /data3/schwartzlab/tejashree/oyster_cnv/cvir_genome/Oyster_intron_Merged.bed -wo -f 1.0 > /data3/schwartzlab/tejashree/oyster_cnv/oyster_cnv_nosel/dup_nosel_intron_full_overlap.bed
+# Dups commpletely in INTERGENIC 
+bedtools intersect -a /data3/schwartzlab/tejashree/oyster_cnv/oyster_cnv_nosel/cvir_filtered_nosel_dups.bed -b /data3/schwartzlab/tejashree/oyster_cnv/cvir_genome/Oyster_intergenic_Merged.bed -wo -f 1.0 > /data3/schwartzlab/tejashree/oyster_cnv/oyster_cnv_nosel/dup_nosel_intergenic_full_overlap.bed
+
 
 #echo "Outfile made ${outfile}"
 echo "STOP" $(date)
